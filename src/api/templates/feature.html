@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="table-container">
+    <h5 class="fw-bold mb-4"><i class="bi bi-bar-chart me-2 text-primary"></i> Feature Explorer</h5>
+    <div class="row g-4">
+        <div class="col-md-8">
+            <div class="table-responsive" style="max-height:500px; overflow-y:auto;">
+                <table class="table table-custom align-middle table-hover" id="feature-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Time</th>
+                            <th>Fuel</th>
+                            <th>Speed</th>
+                            <th>Slope</th>
+                            <th>Rate</th>
+                            <th>State</th>
+                        </tr>
+                    </thead>
+                    <tbody id="feature-tbody"></tbody>
+                </table>
+            </div>
+            <div class="pagination-container mt-3">
+                <button class="btn-page" id="btn-feature-prev" onclick="changeFeaturePage(-1)">Previous</button>
+                <span class="page-info" id="feature-page-info">Page 1 / 1</span>
+                <button class="btn-page" id="btn-feature-next" onclick="changeFeaturePage(1)">Next</button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="bg-light p-4 rounded-3 border shadow-sm h-100">
+                <h6 class="fw-bold mb-3 border-bottom pb-2">Chi tiết đặc trưng (Features)</h6>
+                <div id="feature-detail">
+                    <p class="text-muted small mb-0">Click vào một dòng trong bảng để xem chi tiết.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let allFeatureData = [];
+        let currentFeaturePage = 1;
+        const itemsPerFeaturePage = 10;
+
+        function renderFeatureTable() {
+            const tbody = document.getElementById('feature-tbody');
+            tbody.innerHTML = '';
+            
+            const start = (currentFeaturePage - 1) * itemsPerFeaturePage;
+            const end = start + itemsPerFeaturePage;
+            const pageData = allFeatureData.slice(start, end);
+
+            pageData.forEach((row, idx) => {
+                const raw = row.raw;
+                const processed = row.processed;
+                const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                const realIndex = start + idx + 1;
+                tr.innerHTML = `
+                    <td>${realIndex}</td>
+                    <td>${raw.Timestamp}</td>
+                    <td>${raw.Fuel.toFixed(1)} L</td>
+                    <td>${raw.Speed.toFixed(1)} km/h</td>
+                    <td>${processed.RegressionSlope.toFixed(4)}</td>
+                    <td>${processed.FuelRate.toFixed(3)}</td>
+                    <td>${processed.Prediction}</td>
+                `;
+                tr.onclick = () => showFeature(raw, processed);
+                tbody.appendChild(tr);
+            });
+
+            const totalPages = Math.ceil(allFeatureData.length / itemsPerFeaturePage) || 1;
+            document.getElementById('feature-page-info').innerText = `Page ${currentFeaturePage} / ${totalPages}`;
+            document.getElementById('btn-feature-prev').disabled = currentFeaturePage === 1;
+            document.getElementById('btn-feature-next').disabled = currentFeaturePage === totalPages;
+            
+            if(pageData.length > 0) showFeature(pageData[0].raw, pageData[0].processed);
+        }
+
+        window.changeFeaturePage = function(delta) {
+            const totalPages = Math.ceil(allFeatureData.length / itemsPerFeaturePage) || 1;
+            const newPage = currentFeaturePage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentFeaturePage = newPage;
+                renderFeatureTable();
+            }
+        };
+
+        function showFeature(raw, processed) {
+            const maxRange = 5.0;
+            const rangePercent = Math.min((processed.FuelRange / maxRange) * 100, 100);
+            document.getElementById('feature-detail').innerHTML = `
+                <div class="mb-3">
+                    <table class="table table-borderless small mb-2">
+                        <tr><td class="fw-bold">Fuel Rate</td><td class="text-end">${processed.FuelRate.toFixed(3)} L/s</td></tr>
+                        <tr><td class="fw-bold">Moving Avg</td><td class="text-end">${processed.MovingAvg.toFixed(2)} L</td></tr>
+                        <tr><td class="fw-bold">Rolling Std</td><td class="text-end">${processed.RollingStd.toFixed(4)}</td></tr>
+                        <tr><td class="fw-bold">Window Diff</td><td class="text-end">${processed.WindowFuelDiff.toFixed(2)} L</td></tr>
+                        <tr><td class="fw-bold">Max Jump</td><td class="text-end">${processed.MaxJump.toFixed(2)} L</td></tr>
+                        <tr><td class="fw-bold">Regression Slope</td><td class="text-end">${processed.RegressionSlope.toFixed(4)}</td></tr>
+                        <tr><td class="fw-bold">Stop Duration</td><td class="text-end">${processed.StopDuration || 0}s</td></tr>
+                        <tr><td class="fw-bold">Confidence</td><td class="text-end text-success">${processed.Confidence > 0 ? processed.Confidence.toFixed(1) + '%' : 'N/A'}</td></tr>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between small fw-bold text-muted mb-1">
+                        <span>Fuel Range (Window)</span>
+                        <span>${processed.FuelRange.toFixed(2)} L</span>
+                    </div>
+                    <div style="height: 6px; background: #e2e8f0; border-radius: 4px; width: 100%; overflow: hidden;">
+                        <div style="height: 100%; width: ${rangePercent}%; background: #2563eb; border-radius: 4px;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function fetchFeatureData() {
+            try {
+                const res = await fetch('/api/history');
+                const data = await res.json();
+                // SỬA LỖI: Đảo ngược mảng để dữ liệu mới nhất hiển thị ở trên cùng
+                allFeatureData = data.reverse();
+                const totalPages = Math.ceil(allFeatureData.length / itemsPerFeaturePage) || 1;
+                if (currentFeaturePage > totalPages) currentFeaturePage = totalPages;
+                renderFeatureTable();
+            } catch(e) { console.error("Lỗi fetch feature:", e); }
+        }
+
+        fetchFeatureData();
+        setInterval(fetchFeatureData, 3000);
+    });
+</script>
+{% endblock %}

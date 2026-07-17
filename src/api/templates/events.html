@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="table-container">
+    <h5 class="fw-bold mb-4"><i class="bi bi-exclamation-triangle me-2 text-danger"></i> Event Manager</h5>
+    <div class="table-toolbar">
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-success" id="filter-refuel">⛽ Refuel</button>
+            <button class="btn btn-sm btn-outline-danger" id="filter-theft">⚠️ Theft</button>
+            <button class="btn btn-sm btn-outline-secondary" id="filter-all">All</button>
+        </div>
+    </div>
+    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+        <table class="table table-custom align-middle" id="events-table">
+            <thead>
+                <tr>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Start Fuel</th>
+                    <th>End Fuel</th>
+                    <th>Delta</th>
+                    <th>Duration</th>
+                    <th>Avg Rate</th>
+                    <th>Type</th>
+                    <th>Confidence</th>
+                </tr>
+            </thead>
+            <tbody id="events-tbody"></tbody>
+        </table>
+    </div>
+    
+    <div class="pagination-container">
+        <button class="btn-page" id="btn-events-prev" onclick="changeEventsPage(-1)">Previous</button>
+        <span class="page-info" id="events-page-info">Page 1 / 1</span>
+        <button class="btn-page" id="btn-events-next" onclick="changeEventsPage(1)">Next</button>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let allRawData = [];
+        let filteredEvents = [];
+        let allEvents = [];
+        let currentEventsPage = 1;
+        const itemsPerEventsPage = 10;
+        let currentFilter = 'all';
+
+        function processEvents(data) {
+            const rawData = data.map(d => d.raw);
+            const processedData = data.map(d => d.processed);
+            const events = [];
+            let currentEvent = null;
+            
+            for(let i = 0; i < rawData.length; i++) {
+                const state = processedData[i].Prediction;
+                if(state === 'Refuel' || state === 'Fuel Theft') {
+                    if(!currentEvent) {
+                        currentEvent = { state: state, startIdx: i, rows: [rawData[i]], confidences: [processedData[i].Confidence] };
+                    } else {
+                        currentEvent.rows.push(rawData[i]);
+                        currentEvent.confidences.push(processedData[i].Confidence);
+                    }
+                } else {
+                    if(currentEvent) {
+                        const start = currentEvent.rows[0];
+                        const end = currentEvent.rows[currentEvent.rows.length - 1];
+                        const delta = end.Fuel - start.Fuel;
+                        const timeStart = new Date(start.Timestamp);
+                        const timeEnd = new Date(end.Timestamp);
+                        const durationSec = (timeEnd - timeStart) / 1000;
+                        const avgConfidence = currentEvent.confidences.reduce((a, b) => a + b, 0) / currentEvent.confidences.length;
+                        events.push({
+                            state: currentEvent.state,
+                            startTime: start.Timestamp,
+                            endTime: end.Timestamp,
+                            startFuel: start.Fuel,
+                            endFuel: end.Fuel,
+                            delta: delta,
+                            duration: durationSec.toFixed(0),
+                            avgRate: durationSec !== 0 ? (delta / durationSec) * 60 : 0,
+                            confidence: avgConfidence
+                        });
+                        currentEvent = null;
+                    }
+                }
+            }
+            // Sửa lỗi: Đảo ngược để mới nhất lên đầu
+            return events.reverse(); 
+        }
+
+        function renderEventsTable() {
+            const tbody = document.getElementById('events-tbody');
+            tbody.innerHTML = '';
+            
+            const eventsToRender = currentFilter === 'all' ? allEvents : allEvents.filter(e => e.state === currentFilter);
+            filteredEvents = eventsToRender;
+
+            const start = (currentEventsPage - 1) * itemsPerEventsPage;
+            const end = start + itemsPerEventsPage;
+            const pageData = filteredEvents.slice(start, end);
+
+            pageData.forEach(ev => {
+                const icon = ev.state === 'Refuel' ? '⛽' : '⚠️';
+                const badge = ev.state === 'Refuel' ? 'success' : 'danger';
+                const startTime = ev.startTime.includes('T') ? ev.startTime.split('T')[1].substring(0,8) : ev.startTime.split(' ')[1].substring(0,8);
+                const endTime = ev.endTime.includes('T') ? ev.endTime.split('T')[1].substring(0,8) : ev.endTime.split(' ')[1].substring(0,8);
+                const deltaStr = ev.delta > 0 ? `+${ev.delta.toFixed(1)}` : ev.delta.toFixed(1);
+                const avgRateStr = ev.avgRate > 0 ? `+${ev.avgRate.toFixed(2)}` : `${ev.avgRate.toFixed(2)}`;
+                
+                tbody.innerHTML += `<tr>
+                    <td>${startTime}</td>
+                    <td>${endTime}</td>
+                    <td>${ev.startFuel.toFixed(1)} L</td>
+                    <td>${ev.endFuel.toFixed(1)} L</td>
+                    <td><span class="fw-bold text-${badge}">${deltaStr} L</span></td>
+                    <td>${ev.duration}s</td>
+                    <td>${avgRateStr} L/min</td>
+                    <td><span class="badge bg-${badge} px-3 py-1">${icon} ${ev.state}</span></td>
+                    <td>${ev.confidence > 0 ? ev.confidence.toFixed(1) + '%' : 'N/A'}</td>
+                </tr>`;
+            });
+
+            const totalPages = Math.ceil(filteredEvents.length / itemsPerEventsPage) || 1;
+            if (currentEventsPage > totalPages) currentEventsPage = totalPages;
+            document.getElementById('events-page-info').innerText = `Page ${currentEventsPage} / ${totalPages}`;
+            document.getElementById('btn-events-prev').disabled = currentEventsPage === 1;
+            document.getElementById('btn-events-next').disabled = currentEventsPage === totalPages;
+        }
+
+        window.changeEventsPage = function(delta) {
+            const totalPages = Math.ceil(filteredEvents.length / itemsPerEventsPage) || 1;
+            const newPage = currentEventsPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentEventsPage = newPage;
+                renderEventsTable();
+            }
+        };
+
+        document.getElementById('filter-refuel').onclick = function() { currentFilter = 'Refuel'; currentEventsPage = 1; renderEventsTable(); };
+        document.getElementById('filter-theft').onclick = function() { currentFilter = 'Fuel Theft'; currentEventsPage = 1; renderEventsTable(); };
+        document.getElementById('filter-all').onclick = function() { currentFilter = 'all'; currentEventsPage = 1; renderEventsTable(); };
+
+        async function fetchEventsData() {
+            try {
+                const res = await fetch('/api/history');
+                const data = await res.json();
+                allEvents = processEvents(data);
+                renderEventsTable();
+            } catch(e) { console.error("Lỗi fetch events:", e); }
+        }
+
+        fetchEventsData();
+        setInterval(fetchEventsData, 3000);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+<!-- Import file CSS riêng cho Dashboard -->
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- 8 KPI Cards Grid -->
+<div class="kpi-grid">
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #2563EB;"><i class="bi bi-truck"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Vehicle</div><div class="kpi-value" id="kpi-vehicle">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #16A34A;"><i class="bi bi-fuel-pump"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Fuel (L)</div><div class="kpi-value" id="kpi-fuel">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #F59E0B;"><i class="bi bi-speedometer2"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Speed (km/h)</div><div class="kpi-value" id="kpi-speed">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #DC2626;"><i class="bi bi-activity"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Current State</div><div class="kpi-value" id="kpi-status">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #8b5cf6;"><i class="bi bi-graph-up"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Slope</div><div class="kpi-value" id="kpi-slope">--</div><div class="kpi-sub">Linear Reg</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #06b6d4;"><i class="bi bi-pie-chart"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Confidence</div><div class="kpi-value" id="kpi-confidence">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #3b82f6;"><i class="bi bi-hourglass-split"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Stop Duration</div><div class="kpi-value" id="kpi-stop">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon" style="background: #ef4444;"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Alerts</div><div class="kpi-value" id="kpi-alerts">0</div><div class="kpi-sub">Total incidents</div></div>
+    </div>
+</div>
+
+<!-- Chart (70%) & Right Panel (30%) -->
+<div class="dashboard-grid">
+    <!-- Bên trái: Biểu đồ (Đã được thêm style card-panel để có viền và shadow) -->
+    <div class="card-panel chart-container">
+        <div class="chart-header">
+            <h6><i class="bi bi-graph-up-arrow me-2 text-primary"></i> Biến động nhiên liệu (Explainable Timeline)</h6>
+            <span class="text-muted small"><i class="bi bi-arrow-repeat text-success"></i> Live</span>
+        </div>
+        <!-- Tăng min-height lên 400px để biểu đồ có không gian thoáng hơn -->
+        <div id="fuel-chart" style="width: 100%; height: 100%; min-height: 400px;"></div>
+    </div>
+
+    <!-- Bên phải: Các bảng thông tin -->
+    <div class="right-panel">
+        
+        <!-- Panel 1: Explainable Chart -->
+        <div class="card-panel">
+            <div class="right-panel-title">Explainable Chart</div>
+            <div id="explain-legend" class="legend-container"></div>
+        </div>
+        
+        <!-- Panel 2: AI Rule Recognition -->
+        <div class="card-panel">
+            <div class="right-panel-title">AI Rule Recognition</div>
+            <div id="rule-panel" class="rule-panel-box"></div>
+        </div>
+
+        <!-- Panel 3: Current Decision -->
+        <div class="card-panel">
+            <div class="small fw-bold text-primary">Current Decision</div>
+            <div class="text-dark fw-bold display-6" id="panel-decision" style="font-size:1.8rem;">--</div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom: Event Table with Pagination -->
+<div class="table-container card-panel">
+    <div class="table-toolbar">
+        <h6 class="fw-bold m-0"><i class="bi bi-list-check me-2"></i>Event Logs</h6>
+        <div>
+            <input type="text" class="table-search" placeholder="Search events..." id="event-search">
+            <button class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-funnel"></i> Filter</button>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0" id="event-table">
+            <thead>
+                <tr><th>Time</th><th>Vehicle</th><th>Fuel Before</th><th>Fuel After</th><th>Change</th><th>Slope</th><th>Confidence</th><th>Prediction</th><th>Duration</th></tr>
+            </thead>
+            <tbody id="event-tbody"></tbody>
+        </table>
+    </div>
+    
+    <!-- Phân trang (Pagination Controls) -->
+    <div class="pagination-container" id="pagination-container">
+        <button class="btn-page" id="btn-prev" onclick="changePage(-1)">Previous</button>
+        <span class="page-info" id="page-info">Page 1 / 1</span>
+        <button class="btn-page" id="btn-next" onclick="changePage(1)">Next</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

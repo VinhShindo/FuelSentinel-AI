@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- KPI Cards -->
+<div class="kpi-grid mb-4">
+    <div class="card-kpi">
+        <div class="kpi-icon bg-primary"><i class="bi bi-fuel-pump"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Fuel (L)</div><div class="kpi-value text-success" id="kpi-fuel">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon bg-warning"><i class="bi bi-speedometer2"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Speed (km/h)</div><div class="kpi-value text-warning" id="kpi-speed">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon bg-danger"><i class="bi bi-activity"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Current State</div><div class="kpi-value" id="kpi-status">--</div></div>
+    </div>
+    <div class="card-kpi">
+        <div class="kpi-icon bg-secondary"><i class="bi bi-graph-up"></i></div>
+        <div class="kpi-content"><div class="kpi-label">Slope</div><div class="kpi-value text-dark" id="kpi-slope">--</div></div>
+    </div>
+</div>
+
+<div class="table-container">
+    <h5 class="fw-bold mb-4"><i class="bi bi-broadcast me-2 text-primary"></i> Realtime Monitor</h5>
+    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+        <table class="table table-custom align-middle" id="realtime-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Fuel</th>
+                    <th>Speed</th>
+                    <th>Fuel Rate</th>
+                    <th>Slope</th>
+                    <th>Duration</th>
+                    <th>Confidence</th>
+                    <th>Prediction</th>
+                </tr>
+            </thead>
+            <tbody id="realtime-tbody"></tbody>
+        </table>
+    </div>
+    
+    <div class="pagination-container">
+        <button class="btn-page" id="btn-realtime-prev" onclick="changeRealtimePage(-1)">Previous</button>
+        <span class="page-info" id="realtime-page-info">Page 1 / 1</span>
+        <button class="btn-page" id="btn-realtime-next" onclick="changeRealtimePage(1)">Next</button>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const STATE_BADGES = {
+            'Idle': 'secondary', 'Driving': 'dark', 'Refuel': 'success', 'Fuel Theft': 'danger'
+        };
+        
+        let realtimeData = [];
+        let currentRealtimePage = 1;
+        const itemsPerRealtimePage = 15;
+
+        function updateKPI(raw, processed) {
+            document.getElementById('kpi-fuel').innerText = raw.Fuel?.toFixed(1) || '--';
+            document.getElementById('kpi-speed').innerText = raw.Speed?.toFixed(1) || '--';
+            const statusEl = document.getElementById('kpi-status');
+            statusEl.innerHTML = `<span class="badge bg-${STATE_BADGES[processed.Prediction] || 'secondary'} p-2">${processed.Prediction || 'Idle'}</span>`;
+            document.getElementById('kpi-slope').innerText = processed.RegressionSlope?.toFixed(4) || '0.0000';
+        }
+
+        function renderRealtimeTable() {
+            const tbody = document.getElementById('realtime-tbody');
+            tbody.innerHTML = '';
+            
+            const start = (currentRealtimePage - 1) * itemsPerRealtimePage;
+            const end = start + itemsPerRealtimePage;
+            const pageData = realtimeData.slice(start, end);
+            
+            pageData.forEach(item => {
+                const tr = document.createElement('tr');
+                const badge = STATE_BADGES[item.processed.Prediction] || 'secondary';
+                const time = item.raw.Timestamp.split('T')[1].substring(0, 8);
+                tr.innerHTML = `
+                    <td>${time}</td>
+                    <td><strong>${item.raw.Fuel.toFixed(1)} L</strong></td>
+                    <td>${item.raw.Speed.toFixed(1)} km/h</td>
+                    <td>${item.processed.FuelRate?.toFixed(3) || '--'}</td>
+                    <td>${item.processed.RegressionSlope?.toFixed(4) || '--'}</td>
+                    <td>${item.processed.StopDuration || 0}s</td>
+                    <td>${item.processed.Confidence > 0 ? item.processed.Confidence.toFixed(1) + '%' : 'N/A'}</td>
+                    <td><span class="badge bg-${badge} px-2 py-1">${item.processed.Prediction || 'Unknown'}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const totalPages = Math.ceil(realtimeData.length / itemsPerRealtimePage) || 1;
+            document.getElementById('realtime-page-info').innerText = `Page ${currentRealtimePage} / ${totalPages}`;
+            document.getElementById('btn-realtime-prev').disabled = currentRealtimePage === 1;
+            document.getElementById('btn-realtime-next').disabled = currentRealtimePage === totalPages;
+        }
+
+        window.changeRealtimePage = function(delta) {
+            const totalPages = Math.ceil(realtimeData.length / itemsPerRealtimePage) || 1;
+            const newPage = currentRealtimePage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentRealtimePage = newPage;
+                renderRealtimeTable();
+            }
+        };
+
+        async function init() {
+            try {
+                const res = await fetch('/api/realtime');
+                const data = await res.json();
+                updateKPI(data.raw, data.processed);
+                // SỬA LỖI: Dùng unshift để mới nhất nằm đầu mảng, đồng bộ với logic interval bên dưới
+                realtimeData.unshift({ raw: data.raw, processed: data.processed });
+                if(realtimeData.length > 200) realtimeData.pop();
+                renderRealtimeTable();
+            } catch (e) { console.error("Lỗi khởi tạo:", e); }
+        }
+        init();
+
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/realtime');
+                const data = await res.json();
+                updateKPI(data.raw, data.processed);
+                realtimeData.unshift({ raw: data.raw, processed: data.processed });
+                if(realtimeData.length > 200) realtimeData.pop();
+                renderRealtimeTable();
+            } catch(e) {  }
+        }, 1000);
+    });
+</script>
+{% endblock %}
+{% endblock %}
