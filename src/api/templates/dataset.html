@@ -1,7 +1,20 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="table-container">
-    <h5 class="fw-bold mb-4"><i class="bi bi-database me-2 text-primary"></i> Dataset Explorer</h5>
+<div class="page-header">
+    <div class="page-title-group">
+        <div class="eyebrow">Data access</div>
+        <h2>Dataset explorer</h2>
+        <p>Review the historical telemetry rows that feed the anomaly detection pipeline.</p>
+    </div>
+    <div class="page-header-actions">
+        <span class="status-pill status-pill--info"><i class="bi bi-database"></i> Historical</span>
+    </div>
+</div>
+<div class="table-shell">
+    <div class="table-toolbar">
+        <h6 class="fw-bold m-0"><i class="bi bi-table me-2"></i> Signal dataset</h6>
+        <input type="text" class="table-search" placeholder="Search rows..." aria-label="Search rows">
+    </div>
     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
         <table class="table table-custom align-middle" id="dataset-table">
             <thead>
@@ -21,7 +34,6 @@
             <tbody id="dataset-tbody"></tbody>
         </table>
     </div>
-    
     <div class="pagination-container">
         <button class="btn-page" id="btn-dataset-prev" onclick="changeDatasetPage(-1)">Previous</button>
         <span class="page-info" id="dataset-page-info">Page 1 / 1</span>
@@ -29,6 +41,23 @@
     </div>
 </div>
 <script>
+    // Format timestamp to HH:MM:SS - DD/MM/YYYY
+    function formatTimestamp(isoString) {
+        if (!isoString) return '--';
+        try {
+            const date = new Date(isoString);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+        } catch(e) {
+            return isoString;
+        }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         let allDatasetData = [];
         let currentDatasetPage = 1;
@@ -49,14 +78,14 @@
                 const realIndex = start + index + 1;
                 tbody.innerHTML += `<tr>
                     <td>${realIndex}</td>
-                    <td>${raw.Timestamp}</td>
+                    <td>${formatTimestamp(raw.Timestamp)}</td>
                     <td><strong>VN001</strong></td>
-                    <td>${raw.Fuel.toFixed(1)} L</td>
-                    <td>${raw.Speed.toFixed(1)} km/h</td>
-                    <td>${processed.RegressionSlope.toFixed(4)}</td>
-                    <td>${processed.FuelRate.toFixed(3)} L/s</td>
+                    <td>${raw.Fuel.toFixed(2)} L</td>
+                    <td>${raw.Speed.toFixed(2)} km/h</td>
+                    <td>${processed.RegressionSlope.toFixed(2)}</td>
+                    <td>${processed.FuelRate.toFixed(2)} L/s</td>
                     <td>${processed.StopDuration || 0}s</td>
-                    <td>${processed.Confidence > 0 ? processed.Confidence.toFixed(1) + '%' : 'N/A'}</td>
+                    <td>${processed.Confidence > 0 ? processed.Confidence.toFixed(2) + '%' : 'N/A'}</td>
                     <td><span class="badge bg-${badge}">${processed.Prediction}</span></td>
                 </tr>`;
             });

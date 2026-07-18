@@ -1,27 +1,39 @@
 {% extends 'base.html' %}
 {% block content %}
-<!-- KPI Cards -->
-<div class="kpi-grid mb-4">
-    <div class="card-kpi">
-        <div class="kpi-icon bg-primary"><i class="bi bi-fuel-pump"></i></div>
-        <div class="kpi-content"><div class="kpi-label">Fuel (L)</div><div class="kpi-value text-success" id="kpi-fuel">--</div></div>
+<div class="page-header">
+    <div class="page-title-group">
+        <div class="eyebrow">Live telemetry</div>
+        <h2>Realtime monitor</h2>
+        <p>Watch the most recent fleet signals and AI states as they stream into the platform.</p>
     </div>
-    <div class="card-kpi">
-        <div class="kpi-icon bg-warning"><i class="bi bi-speedometer2"></i></div>
-        <div class="kpi-content"><div class="kpi-label">Speed (km/h)</div><div class="kpi-value text-warning" id="kpi-speed">--</div></div>
+    <div class="page-header-actions">
+        <span class="status-pill status-pill--success"><i class="bi bi-broadcast"></i> Streaming</span>
     </div>
-    <div class="card-kpi">
-        <div class="kpi-icon bg-danger"><i class="bi bi-activity"></i></div>
-        <div class="kpi-content"><div class="kpi-label">Current State</div><div class="kpi-value" id="kpi-status">--</div></div>
+</div>
+<div class="metric-card-grid mb-4">
+    <div class="metric-card metric-card--success">
+        <div class="metric-icon" style="background: linear-gradient(135deg, #10B981, #34D399);"><i class="bi bi-fuel-pump"></i></div>
+        <div class="metric-card__body"><div class="metric-card__label">Fuel (L)</div><div class="metric-card__value" id="kpi-fuel">--</div></div>
     </div>
-    <div class="card-kpi">
-        <div class="kpi-icon bg-secondary"><i class="bi bi-graph-up"></i></div>
-        <div class="kpi-content"><div class="kpi-label">Slope</div><div class="kpi-value text-dark" id="kpi-slope">--</div></div>
+    <div class="metric-card metric-card--warning">
+        <div class="metric-icon" style="background: linear-gradient(135deg, #F59E0B, #FBBF24);"><i class="bi bi-speedometer2"></i></div>
+        <div class="metric-card__body"><div class="metric-card__label">Speed (km/h)</div><div class="metric-card__value" id="kpi-speed">--</div></div>
+    </div>
+    <div class="metric-card metric-card--danger">
+        <div class="metric-icon" style="background: linear-gradient(135deg, #EF4444, #F87171);"><i class="bi bi-activity"></i></div>
+        <div class="metric-card__body"><div class="metric-card__label">Current State</div><div class="metric-card__value" id="kpi-status">--</div></div>
+    </div>
+    <div class="metric-card metric-card--purple">
+        <div class="metric-icon" style="background: linear-gradient(135deg, #8B5CF6, #C084FC);"><i class="bi bi-graph-up"></i></div>
+        <div class="metric-card__body"><div class="metric-card__label">Slope</div><div class="metric-card__value" id="kpi-slope">--</div></div>
     </div>
 </div>
 
-<div class="table-container">
-    <h5 class="fw-bold mb-4"><i class="bi bi-broadcast me-2 text-primary"></i> Realtime Monitor</h5>
+<div class="table-shell">
+    <div class="table-toolbar">
+        <h6 class="fw-bold m-0"><i class="bi bi-broadcast me-2"></i> Streaming events</h6>
+        <div class="status-pill status-pill--info"><i class="bi bi-arrow-clockwise"></i> Auto refresh</div>
+    </div>
     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
         <table class="table table-custom align-middle" id="realtime-table">
             <thead>
@@ -39,7 +51,6 @@
             <tbody id="realtime-tbody"></tbody>
         </table>
     </div>
-    
     <div class="pagination-container">
         <button class="btn-page" id="btn-realtime-prev" onclick="changeRealtimePage(-1)">Previous</button>
         <span class="page-info" id="realtime-page-info">Page 1 / 1</span>
@@ -59,11 +70,11 @@
         const itemsPerRealtimePage = 15;
 
         function updateKPI(raw, processed) {
-            document.getElementById('kpi-fuel').innerText = raw.Fuel?.toFixed(1) || '--';
-            document.getElementById('kpi-speed').innerText = raw.Speed?.toFixed(1) || '--';
+            document.getElementById('kpi-fuel').innerText = raw.Fuel?.toFixed(2) || '--';
+            document.getElementById('kpi-speed').innerText = raw.Speed?.toFixed(2) || '--';
             const statusEl = document.getElementById('kpi-status');
             statusEl.innerHTML = `<span class="badge bg-${STATE_BADGES[processed.Prediction] || 'secondary'} p-2">${processed.Prediction || 'Idle'}</span>`;
-            document.getElementById('kpi-slope').innerText = processed.RegressionSlope?.toFixed(4) || '0.0000';
+            document.getElementById('kpi-slope').innerText = processed.RegressionSlope?.toFixed(2) || '0.00';
         }
 
         function renderRealtimeTable() {
@@ -80,12 +91,12 @@
                 const time = item.raw.Timestamp.split('T')[1].substring(0, 8);
                 tr.innerHTML = `
                     <td>${time}</td>
-                    <td><strong>${item.raw.Fuel.toFixed(1)} L</strong></td>
-                    <td>${item.raw.Speed.toFixed(1)} km/h</td>
-                    <td>${item.processed.FuelRate?.toFixed(3) || '--'}</td>
-                    <td>${item.processed.RegressionSlope?.toFixed(4) || '--'}</td>
+                    <td><strong>${item.raw.Fuel.toFixed(2)} L</strong></td>
+                    <td>${item.raw.Speed.toFixed(2)} km/h</td>
+                    <td>${item.processed.FuelRate?.toFixed(2) || '--'} L/s</td>
+                    <td>${item.processed.RegressionSlope?.toFixed(2) || '--'}</td>
                     <td>${item.processed.StopDuration || 0}s</td>
-                    <td>${item.processed.Confidence > 0 ? item.processed.Confidence.toFixed(1) + '%' : 'N/A'}</td>
+                    <td>${item.processed.Confidence > 0 ? item.processed.Confidence.toFixed(2) + '%' : 'N/A'}</td>
                     <td><span class="badge bg-${badge} px-2 py-1">${item.processed.Prediction || 'Unknown'}</span></td>
                 `;
                 tbody.appendChild(tr);

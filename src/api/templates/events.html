@@ -1,12 +1,25 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="table-container">
-    <h5 class="fw-bold mb-4"><i class="bi bi-exclamation-triangle me-2 text-danger"></i> Event Manager</h5>
+<div class="page-header">
+    <div class="page-title-group">
+        <div class="eyebrow">Operations</div>
+        <h2>Event manager</h2>
+        <p>Track fuel events, inspect durations, and review each anomaly in a structured timeline.</p>
+    </div>
+    <div class="page-header-actions">
+        <span class="status-pill status-pill--danger"><i class="bi bi-exclamation-triangle"></i> Alerts</span>
+    </div>
+</div>
+<div class="table-shell">
     <div class="table-toolbar">
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-sm btn-outline-success" id="filter-refuel">⛽ Refuel</button>
             <button class="btn btn-sm btn-outline-danger" id="filter-theft">⚠️ Theft</button>
             <button class="btn btn-sm btn-outline-secondary" id="filter-all">All</button>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <input type="text" class="table-search" placeholder="Search events..." aria-label="Search events">
+            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export CSV</button>
         </div>
     </div>
     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
@@ -27,7 +40,6 @@
             <tbody id="events-tbody"></tbody>
         </table>
     </div>
-    
     <div class="pagination-container">
         <button class="btn-page" id="btn-events-prev" onclick="changeEventsPage(-1)">Previous</button>
         <span class="page-info" id="events-page-info">Page 1 / 1</span>
@@ -35,6 +47,23 @@
     </div>
 </div>
 <script>
+    // Format timestamp to HH:MM:SS - DD/MM/YYYY
+    function formatTimestamp(isoString) {
+        if (!isoString) return '--';
+        try {
+            const date = new Date(isoString);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+        } catch(e) {
+            return isoString;
+        }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         let allRawData = [];
         let filteredEvents = [];
@@ -100,21 +129,21 @@
             pageData.forEach(ev => {
                 const icon = ev.state === 'Refuel' ? '⛽' : '⚠️';
                 const badge = ev.state === 'Refuel' ? 'success' : 'danger';
-                const startTime = ev.startTime.includes('T') ? ev.startTime.split('T')[1].substring(0,8) : ev.startTime.split(' ')[1].substring(0,8);
-                const endTime = ev.endTime.includes('T') ? ev.endTime.split('T')[1].substring(0,8) : ev.endTime.split(' ')[1].substring(0,8);
-                const deltaStr = ev.delta > 0 ? `+${ev.delta.toFixed(1)}` : ev.delta.toFixed(1);
+                const startTime = formatTimestamp(ev.startTime);
+                const endTime = formatTimestamp(ev.endTime);
+                const deltaStr = ev.delta > 0 ? `+${ev.delta.toFixed(2)}` : ev.delta.toFixed(2);
                 const avgRateStr = ev.avgRate > 0 ? `+${ev.avgRate.toFixed(2)}` : `${ev.avgRate.toFixed(2)}`;
                 
                 tbody.innerHTML += `<tr>
                     <td>${startTime}</td>
                     <td>${endTime}</td>
-                    <td>${ev.startFuel.toFixed(1)} L</td>
-                    <td>${ev.endFuel.toFixed(1)} L</td>
+                    <td>${ev.startFuel.toFixed(2)} L</td>
+                    <td>${ev.endFuel.toFixed(2)} L</td>
                     <td><span class="fw-bold text-${badge}">${deltaStr} L</span></td>
                     <td>${ev.duration}s</td>
                     <td>${avgRateStr} L/min</td>
                     <td><span class="badge bg-${badge} px-3 py-1">${icon} ${ev.state}</span></td>
-                    <td>${ev.confidence > 0 ? ev.confidence.toFixed(1) + '%' : 'N/A'}</td>
+                    <td>${ev.confidence > 0 ? ev.confidence.toFixed(2) + '%' : 'N/A'}</td>
                 </tr>`;
             });
 
@@ -140,9 +169,17 @@
 
         async function fetchEventsData() {
             try {
-                const res = await fetch('/api/history');
-                const data = await res.json();
-                allEvents = processEvents(data);
+                const res = await fetch('/api/events');
+                const events = await res.json();
+                if (!Array.isArray(events)) {
+                    throw new Error('Invalid events payload');
+                }
+                allEvents = events.map(ev => ({
+                    ...ev,
+                    duration: Number(ev.duration_s || ev.duration || 0),
+                    avgRate: Number(ev.avg_rate || ev.avgRate || 0),
+                    confidence: Number(ev.confidence || 0)
+                }));
                 renderEventsTable();
             } catch(e) { console.error("Lỗi fetch events:", e); }
         }

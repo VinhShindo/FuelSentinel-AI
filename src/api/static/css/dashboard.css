@@ -1,121 +1,55 @@
-/* ======================= KPI CARDS ======================= */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-@media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 576px) { .kpi-grid { grid-template-columns: 1fr; } }
-
-.card-kpi { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-.card-kpi:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-.kpi-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white; flex-shrink: 0; }
-.kpi-content { flex: 1; }
-.kpi-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-.kpi-value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; color: var(--text-main); }
-.kpi-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-
-/* ======================= CARD PANEL CHUNG (Áp dụng cho Chart, Right Panel, Table) ======================= */
-.card-panel { 
-    background: var(--bg-card); 
-    border: 1px solid var(--border-color); 
-    border-radius: 14px; 
-    padding: 16px 20px 20px; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    transition: all 0.3s ease;
+/* Dashboard-specific refinements */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+.dashboard-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 18px; margin-bottom: 20px; align-items: stretch; }
+.chart-container { min-height: 660px; height: min(74vh, 760px); display: flex; flex-direction: column; }
+#fuel-chart { width: 100%; height: 100%; min-height: 560px; flex: 1 1 auto; }
+.right-panel { display: flex; flex-direction: column; gap: 12px; }
+#explain-legend { display: flex; flex-direction: column; gap: 4px; }
+.legend-row { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-primary); }
+.legend-row span { width: 14px; height: 14px; border-radius: 4px; }
+#rule-panel { max-height: 220px; overflow-y: auto; }
+.right-panel .card-panel:last-child { background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.08)); }
+.table-container { margin-top: 8px; }
+.table-toolbar { margin-bottom: 14px; }
+.table-responsive {
+    position: relative;
+    max-height: min(620px, 70vh);
+    overflow: auto;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148,163,184,0.45) transparent;
+    overscroll-behavior: contain;
 }
-.card-panel:hover {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-}
-
-/* ======================= CHART & PANEL ======================= */
-.dashboard-grid { display: grid; grid-template-columns: 70% 30%; gap: 20px; margin-bottom: 32px; }
-@media (max-width: 1200px) { .dashboard-grid { grid-template-columns: 1fr; } }
-
-/* Chart container dùng flex để chart tự co giãn chiều cao */
-.chart-container { 
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding-bottom: 16px; /* Giữ padding đồng đều */
-}
-#fuel-chart {
-    flex: 1;
+.table-responsive::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-responsive::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.45); border-radius: 999px; }
+.table-custom {
     width: 100%;
-    min-height: 450px;
+    border-collapse: separate;
+    border-spacing: 0;
 }
-
-.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.chart-header h6 { font-weight: 700; color: var(--text-main); margin: 0; }
-
-/* Bên phải */
-.right-panel { display: flex; flex-direction: column; gap: 12px; height: 100%; }
-.right-panel-title { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;}
-
-#explain-legend { display: flex; flex-direction: column; gap: 6px; }
-.legend-row { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; font-weight: 500; color: var(--text-main); }
-.legend-row span { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.05); flex-shrink: 0; }
-
-#rule-panel {
-    background: var(--bg-main); padding: 12px 16px; border-radius: 10px; max-height: 200px; overflow-y: auto; 
-    font-size: 0.8rem; line-height: 1.5; color: var(--text-main);
+.table-custom thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--surface);
+    box-shadow: inset 0 -1px 0 var(--border);
+    backdrop-filter: blur(8px);
 }
-#rule-panel .rule-section { font-weight: 700; color: var(--text-muted); margin-bottom: 4px; margin-top: 6px; }
-#rule-panel .rule-content { padding-left: 8px; border-left: 2px solid var(--primary); margin-bottom: 6px; }
-#rule-panel .highlight-green { color: var(--success); font-weight: 600; }
-#rule-panel .highlight-red { color: var(--danger); font-weight: 600; }
-.formula-box { background: var(--bg-card); padding: 6px 10px; border-radius: 6px; font-family: monospace; font-weight: 600; display: inline-block; margin-top: 4px; border: 1px solid var(--border-color); }
-
-/* Panel Current Decision */
-.right-panel .card-panel:last-child {
-    background: #eff6ff; /* Màu nền xanh nhạt cho Current Decision */
-    border-color: #bfdbfe;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.table-custom thead th:first-child {
+    border-top-left-radius: 14px;
 }
-.right-panel .card-panel:last-child .right-panel-title {
-    border-bottom: none;
-    color: #1d4ed8;
-    margin-bottom: 0;
+.table-custom thead th:last-child {
+    border-top-right-radius: 14px;
 }
-
-/* ======================= CALLOUT ANNOTATION ======================= */
-.callout-container-wrapper { position: relative; width: 100%; height: 140px; margin-top: -10px; pointer-events: none; }
-.callout-box {
-    position: absolute; bottom: 0px; width: 240px; background: var(--bg-card);
-    border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08); pointer-events: auto; display: flex; gap: 12px;
-    align-items: center; z-index: 10;
-    transition: all 0.3s ease;
+.table-custom tbody tr { background: var(--surface); }
+.table-custom tbody tr:hover { background: var(--surface-hover); }
+.table-shell {
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
 }
-.callout-box::before {
-    content: ''; position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
-    width: 2px; height: 45px; background: var(--border-color);
-    border-left: 1px dashed var(--text-muted);
-}
-.callout-box.slide-in { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-.callout-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: white; flex-shrink: 0; }
-.callout-content { flex: 1; }
-.callout-title { font-weight: 700; font-size: 0.9rem; color: var(--text-main); }
-.callout-delta { font-weight: 700; font-size: 1.2rem; line-height: 1; }
-.callout-meta { font-size: 0.75rem; color: var(--text-muted); }
-
-/* ======================= TABLE ======================= */
-.table-container { 
-    margin-top: 32px; 
-}
-.table-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;}
-.table-search { background: var(--bg-main); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; outline: none; min-width: 180px; color: var(--text-main); }
-.table-search:focus { border-color: var(--primary); }
-.table-custom thead th { background: var(--bg-main); color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 8px; }
-.table-custom tbody tr { border-bottom: 1px solid var(--border-color); transition: 0.2s; }
-.table-custom tbody tr:hover { background: var(--bg-main); }
-.table-custom td { padding: 8px; font-size: 0.85rem; vertical-align: middle; }
-
-.pagination-container { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); }
-.pagination-container .btn-page {
-    background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted);
-    padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: 0.2s;
-}
-.pagination-container .btn-page:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
-.pagination-container .btn-page:disabled { opacity: 0.5; cursor: not-allowed; }
-.pagination-container .page-info { font-size: 0.8rem; color: var(--text-muted); }
+@media (max-width: 1200px) { .dashboard-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .kpi-grid { grid-template-columns: 1fr; } }

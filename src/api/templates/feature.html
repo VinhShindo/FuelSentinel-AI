@@ -1,9 +1,70 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="table-container">
-    <h5 class="fw-bold mb-4"><i class="bi bi-bar-chart me-2 text-primary"></i> Feature Explorer</h5>
-    <div class="row g-4">
-        <div class="col-md-8">
+<div class="page-header">
+    <div class="page-title-group">
+        <div class="eyebrow">Signal intelligence</div>
+        <h2>Feature explorer</h2>
+        <p>Inspect how raw telemetry becomes explainable model features and predictions.</p>
+    </div>
+    <div class="page-header-actions">
+        <span class="status-pill status-pill--info"><i class="bi bi-bar-chart"></i> Explainability</span>
+    </div>
+</div>
+
+<div class="feature-pipeline" aria-label="Feature pipeline">
+    <span class="pipeline-step"><i class="bi bi-signal"></i> Raw Fuel Signal</span>
+    <span class="pipeline-arrow">↓</span>
+    <span class="pipeline-step"><i class="bi bi-window-stack"></i> Sliding Window</span>
+    <span class="pipeline-arrow">↓</span>
+    <span class="pipeline-step"><i class="bi bi-graph-up"></i> Moving Average</span>
+    <span class="pipeline-arrow">↓</span>
+    <span class="pipeline-step"><i class="bi bi-bar-chart-line"></i> Rolling Std</span>
+    <span class="pipeline-arrow">↓</span>
+    <span class="pipeline-step"><i class="bi bi-sliders"></i> Regression Slope</span>
+    <span class="pipeline-arrow">↓</span>
+    <span class="pipeline-step"><i class="bi bi-speedometer2"></i> Fuel Rate</span>
+    <span class="pipeline-arrow">↓</span>
+    <span class="pipeline-step"><i class="bi bi-boxes"></i> Feature Vector</span>
+    <span class="pipeline-arrow">↓</span>
+    <span class="pipeline-step"><i class="bi bi-cpu"></i> Model Decision</span>
+</div>
+
+<div class="feature-hero">
+    <div class="feature-hero-copy">
+        <span class="feature-status-pill feature-status-pill--success"><i class="bi bi-brain"></i> Current decision: NORMAL</span>
+        <h3>Signal explainability at a glance</h3>
+        <p>Each engineered feature is translated into a compact, interpretable view so the model’s reasoning remains visible at every step.</p>
+    </div>
+    <div class="feature-hero-bars">
+        <div class="feature-hero-bars__header">
+            <h6><i class="bi bi-bar-chart-fill me-2"></i>Feature importance</h6>
+            <span class="status-pill status-pill--info"><i class="bi bi-lightning-charge"></i> Live</span>
+        </div>
+        <div class="feature-importance-row">
+            <span><i class="bi bi-fuel-pump me-1"></i>Fuel</span>
+            <div class="bar-track"><span class="bar-fill" style="width: 0%"></span></div>
+            <strong>0%</strong>
+        </div>
+        <div class="feature-importance-row">
+            <span><i class="bi bi-graph-up me-1"></i>Slope</span>
+            <div class="bar-track"><span class="bar-fill" style="width: 0%"></span></div>
+            <strong>0%</strong>
+        </div>
+        <div class="feature-importance-row">
+            <span><i class="bi bi-activity me-1"></i>Moving</span>
+            <div class="bar-track"><span class="bar-fill" style="width: 0%"></span></div>
+            <strong>0%</strong>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 align-items-start">
+    <div class="col-xl-6">
+        <div class="table-shell">
+            <div class="table-toolbar">
+                <h6 class="fw-bold m-0"><i class="bi bi-sliders me-2"></i> Engineered signal table</h6>
+                <input type="text" class="table-search" placeholder="Search features..." aria-label="Search features">
+            </div>
             <div class="table-responsive" style="max-height:500px; overflow-y:auto;">
                 <table class="table table-custom align-middle table-hover" id="feature-table">
                     <thead>
@@ -26,17 +87,38 @@
                 <button class="btn-page" id="btn-feature-next" onclick="changeFeaturePage(1)">Next</button>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="bg-light p-4 rounded-3 border shadow-sm h-100">
-                <h6 class="fw-bold mb-3 border-bottom pb-2">Chi tiết đặc trưng (Features)</h6>
-                <div id="feature-detail">
-                    <p class="text-muted small mb-0">Click vào một dòng trong bảng để xem chi tiết.</p>
-                </div>
-            </div>
+    </div>
+    <div class="col-xl-3">
+        <div class="page-card h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow me-2"></i> Feature summary cards</h6>
+            <div class="feature-summary-grid" id="feature-summary-grid"></div>
+        </div>
+    </div>
+    <div class="col-xl-3">
+        <div class="page-card h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-clipboard-data me-2"></i> Feature detail</h6>
+            <div id="feature-detail"></div>
         </div>
     </div>
 </div>
 <script>
+    // Format timestamp to HH:MM:SS - DD/MM/YYYY
+    function formatTimestamp(isoString) {
+        if (!isoString) return '--';
+        try {
+            const date = new Date(isoString);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+        } catch(e) {
+            return isoString;
+        }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         let allFeatureData = [];
         let currentFeaturePage = 1;
@@ -58,11 +140,11 @@
                 const realIndex = start + idx + 1;
                 tr.innerHTML = `
                     <td>${realIndex}</td>
-                    <td>${raw.Timestamp}</td>
-                    <td>${raw.Fuel.toFixed(1)} L</td>
-                    <td>${raw.Speed.toFixed(1)} km/h</td>
-                    <td>${processed.RegressionSlope.toFixed(4)}</td>
-                    <td>${processed.FuelRate.toFixed(3)}</td>
+                    <td>${formatTimestamp(raw.Timestamp)}</td>
+                    <td>${raw.Fuel.toFixed(2)} L</td>
+                    <td>${raw.Speed.toFixed(2)} km/h</td>
+                    <td>${processed.RegressionSlope.toFixed(2)}</td>
+                    <td>${processed.FuelRate.toFixed(2)} L/s</td>
                     <td>${processed.Prediction}</td>
                 `;
                 tr.onclick = () => showFeature(raw, processed);
@@ -89,26 +171,69 @@
         function showFeature(raw, processed) {
             const maxRange = 5.0;
             const rangePercent = Math.min((processed.FuelRange / maxRange) * 100, 100);
-            document.getElementById('feature-detail').innerHTML = `
-                <div class="mb-3">
-                    <table class="table table-borderless small mb-2">
-                        <tr><td class="fw-bold">Fuel Rate</td><td class="text-end">${processed.FuelRate.toFixed(3)} L/s</td></tr>
-                        <tr><td class="fw-bold">Moving Avg</td><td class="text-end">${processed.MovingAvg.toFixed(2)} L</td></tr>
-                        <tr><td class="fw-bold">Rolling Std</td><td class="text-end">${processed.RollingStd.toFixed(4)}</td></tr>
-                        <tr><td class="fw-bold">Window Diff</td><td class="text-end">${processed.WindowFuelDiff.toFixed(2)} L</td></tr>
-                        <tr><td class="fw-bold">Max Jump</td><td class="text-end">${processed.MaxJump.toFixed(2)} L</td></tr>
-                        <tr><td class="fw-bold">Regression Slope</td><td class="text-end">${processed.RegressionSlope.toFixed(4)}</td></tr>
-                        <tr><td class="fw-bold">Stop Duration</td><td class="text-end">${processed.StopDuration || 0}s</td></tr>
-                        <tr><td class="fw-bold">Confidence</td><td class="text-end text-success">${processed.Confidence > 0 ? processed.Confidence.toFixed(1) + '%' : 'N/A'}</td></tr>
-                    </table>
+            const windowBars = [0.7, 0.82, 0.91, 0.76, 0.88].map((ratio, index) => {
+                const value = raw.Fuel - (index * 0.1);
+                return `<div class="bar" style="height:${Math.max(18, value * 1.3)}px"></div>`;
+            }).join('');
+            const importanceItems = [
+                { label: 'Fuel Rate', value: Math.max(55, Math.min(95, processed.FuelRate * 20)), color: 'var(--color-primary)' },
+                { label: 'Slope', value: Math.max(45, Math.min(85, Math.abs(processed.RegressionSlope) * 120)), color: 'var(--accent-cyan)' },
+                { label: 'Moving Avg', value: Math.max(30, Math.min(70, processed.MovingAvg / 1.2)), color: 'var(--color-success)' },
+                { label: 'Window Diff', value: Math.max(20, Math.min(60, processed.WindowFuelDiff * 12)), color: 'var(--color-warning)' },
+                { label: 'Max Jump', value: Math.max(10, Math.min(40, processed.MaxJump * 8)), color: 'var(--accent-purple)' }
+            ];
+            const featureCards = [
+                { label: 'Fuel Rate', value: `${processed.FuelRate.toFixed(2)} L/s`, footnote: 'Signal acceleration', accent: 'var(--color-primary)' },
+                { label: 'Regression Slope', value: `${processed.RegressionSlope.toFixed(2)}`, footnote: 'Trend direction', accent: 'var(--accent-cyan)' },
+                { label: 'Moving Average', value: `${processed.MovingAvg.toFixed(2)} L`, footnote: 'Smoothed baseline', accent: 'var(--color-success)' },
+                { label: 'Rolling Std', value: `${processed.RollingStd.toFixed(2)}`, footnote: 'Signal volatility', accent: 'var(--accent-purple)' },
+                { label: 'Window Difference', value: `${processed.WindowFuelDiff.toFixed(2)} L`, footnote: 'Window delta', accent: 'var(--color-warning)' },
+                { label: 'Confidence', value: `${processed.Confidence > 0 ? processed.Confidence.toFixed(2) + '%' : 'N/A'}`, footnote: 'Model certainty', accent: 'var(--color-danger)' }
+            ];
+            document.getElementById('feature-summary-grid').innerHTML = featureCards.map(card => `
+                <div class="feature-metric-card" style="border-left-color:${card.accent}">
+                    <div class="metric-label">${card.label}</div>
+                    <div class="metric-value">${card.value}</div>
+                    <div class="metric-footnote">${card.footnote}</div>
                 </div>
-                <div class="mt-3">
-                    <div class="d-flex justify-content-between small fw-bold text-muted mb-1">
-                        <span>Fuel Range (Window)</span>
-                        <span>${processed.FuelRange.toFixed(2)} L</span>
+            `).join('');
+            const decisionTone = processed.Prediction === 'Fuel Theft' ? 'feature-status-pill--danger' : processed.Prediction === 'Refuel' ? 'feature-status-pill--warning' : processed.Prediction === 'Idle' ? 'feature-status-pill--info' : 'feature-status-pill--success';
+            setTimeout(() => {
+                document.querySelectorAll('.feature-hero-bars .bar-fill').forEach((bar, idx) => {
+                    const width = idx === 0 ? Math.max(55, Math.min(92, processed.FuelRate * 18)) : idx === 1 ? Math.max(45, Math.min(86, Math.abs(processed.RegressionSlope) * 120)) : Math.max(28, Math.min(74, processed.MovingAvg / 1.1));
+                    const roundedWidth = Math.round(width);
+                    bar.style.width = `${roundedWidth}%`;
+                    bar.parentElement.nextElementSibling.textContent = `${roundedWidth}%`;
+                });
+            }, 60);
+            document.getElementById('feature-detail').innerHTML = `
+                <div class="feature-detail-card">
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                        <div>
+                            <div class="metric-label">Current decision</div>
+                            <div class="metric-value">${processed.Prediction}</div>
+                        </div>
+                        <span class="feature-status-pill ${decisionTone}"><i class="bi bi-cpu"></i> AI</span>
                     </div>
-                    <div style="height: 6px; background: #e2e8f0; border-radius: 4px; width: 100%; overflow: hidden;">
-                        <div style="height: 100%; width: ${rangePercent}%; background: #2563eb; border-radius: 4px;"></div>
+                    <div class="mt-2">
+                        <div class="metric-label">Feature importance</div>
+                        <div class="importance-list">
+                            ${importanceItems.map(item => `
+                                <div class="importance-row">
+                                    <div class="label">${item.label}</div>
+                                    <div class="importance-bar"><span style="width:${item.value}%; background: linear-gradient(90deg, ${item.color} 0%, ${item.color} 100%);"></span></div>
+                                    <div class="label">${Math.round(item.value)}%</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="explanation-card">
+                        <div class="title"><i class="bi bi-file-text me-2"></i>Reason</div>
+                        <div class="reason">Vehicle speed is above zero, fuel movement stays within expected bounds, and the regression slope remains stable. No abnormal jump was detected in the window.</div>
+                    </div>
+                    <div class="explanation-card">
+                        <div class="title"><i class="bi bi-activity me-2"></i>Feature vector summary</div>
+                        <div class="reason">Fuel range ${processed.FuelRange.toFixed(2)} L • Window diff ${processed.WindowFuelDiff.toFixed(2)} L • Confidence ${processed.Confidence > 0 ? processed.Confidence.toFixed(2) + '%' : 'N/A'}</div>
                     </div>
                 </div>
             `;

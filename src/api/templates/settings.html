@@ -1,34 +1,96 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="table-container">
-    <h5 class="fw-bold mb-4"><i class="bi bi-gear me-2 text-secondary"></i> Settings</h5>
-    <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card p-4">
-                <h6 class="fw-bold mb-3">Appearance</h6>
-                <div class="d-flex align-items-center justify-content-between border-bottom pb-3">
-                    <div>
-                        <div class="fw-bold">Dark Mode</div>
-                        <div class="small text-muted">Switch theme to dark mode.</div>
-                    </div>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="darkModeToggle" onchange="toggleTheme()">
-                    </div>
+<div class="page-header">
+    <div class="page-title-group">
+        <div class="eyebrow">Configuration</div>
+        <h2>Experience settings</h2>
+        <p>Personalize the appearance, motion, and visual language of the monitoring workspace.</p>
+    </div>
+    <div class="page-header-actions">
+        <span class="status-pill status-pill--info"><i class="bi bi-sliders"></i> Customizable</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="page-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h6 class="fw-bold mb-1">Appearance</h6>
+                    <p class="mb-0 text-muted">Switch between light, dark, or system colors.</p>
+                </div>
+                <span class="status-pill status-pill--success"><i class="bi bi-palette"></i> Theme</span>
+            </div>
+            <div class="setting-card mb-3">
+                <div>
+                    <div class="title">Theme mode</div>
+                    <div class="hint">Use the environment theme or choose your preference.</div>
+                </div>
+                <div class="theme-option-group">
+                    <button class="theme-option" data-theme-option="light" onclick="applyTheme('light')">Light</button>
+                    <button class="theme-option" data-theme-option="dark" onclick="applyTheme('dark')">Dark</button>
+                    <button class="theme-option" data-theme-option="system" onclick="applyTheme('system')">System</button>
+                </div>
+            </div>
+            <div class="setting-card mb-3">
+                <div>
+                    <div class="title">Accent color</div>
+                    <div class="hint">Refine the primary brand color for the interface.</div>
+                </div>
+                <div class="accent-grid">
+                    <button class="accent-option" type="button" data-accent-option="#2563EB" style="background:#2563EB" onclick="setAccentColor('#2563EB')"></button>
+                    <button class="accent-option" type="button" data-accent-option="#0EA5E9" style="background:#0EA5E9" onclick="setAccentColor('#0EA5E9')"></button>
+                    <button class="accent-option" type="button" data-accent-option="#7C3AED" style="background:#7C3AED" onclick="setAccentColor('#7C3AED')"></button>
+                    <button class="accent-option" type="button" data-accent-option="#16A34A" style="background:#16A34A" onclick="setAccentColor('#16A34A')"></button>
+                </div>
+            </div>
+            <div class="setting-card">
+                <div>
+                    <div class="title">Motion</div>
+                    <div class="hint">Reduce animation for a calmer experience.</div>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="animationToggle" checked onchange="applyAnimations(this.checked)">
                 </div>
             </div>
         </div>
     </div>
+    <div class="col-lg-6">
+        <div class="page-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h6 class="fw-bold mb-1">Workspace</h6>
+                    <p class="mb-0 text-muted">Compact layout and localized labels.</p>
+                </div>
+                <span class="status-pill status-pill--warning"><i class="bi bi-globe2"></i> Locale</span>
+            </div>
+            <div class="setting-card mb-3">
+                <div>
+                    <div class="title">Compact mode</div>
+                    <div class="hint">Tighten padding for dense monitoring sessions.</div>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="compactToggle" onchange="applyCompactMode(this.checked)">
+                </div>
+            </div>
+            <div class="setting-card mb-3">
+                <div>
+                    <div class="title">Language</div>
+                    <div class="hint">Select the preferred interface language.</div>
+                </div>
+                <div class="theme-option-group">
+                    <button class="theme-option active">English</button>
+                    <button class="theme-option">Tiếng Việt</button>
+                </div>
+            </div>
+            <div class="setting-card">
+                <div>
+                    <div class="title">Accessibility</div>
+                    <div class="hint">AA contrast, visible focus states, and keyboard-friendly controls are already included.</div>
+                </div>
+                <span class="status-pill status-pill--success"><i class="bi bi-universal-access"></i> Ready</span>
+            </div>
+        </div>
+    </div>
 </div>
-<script>
-    function toggleTheme() {
-        const isDark = document.getElementById('darkModeToggle').checked;
-        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    }
-    // Load saved theme
-    if (localStorage.getItem('theme') === 'dark') {
-        document.getElementById('darkModeToggle').checked = true;
-        document.documentElement.setAttribute('data-theme', 'dark');
-    }
-</script>
 {% endblock %}

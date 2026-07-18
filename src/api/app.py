@@ -31,7 +31,167 @@ simulator = SensorSimulator(vehicle_id="VN001", sample_interval=1.0)
 master_raw = pd.DataFrame(columns=['Timestamp', 'VehicleID', 'Fuel', 'Speed',
                                    'Latitude', 'Longitude', 'ADC'])
 processed_buffer = []   # list of dict với Timestamp là datetime
+alerts_buffer = []
+seen_alert_ids = set()
+ALERTS_LOG_FILE = os.path.join(BASE_DIR, '../../data/alerts.txt')
 buffer_lock = threading.Lock()
+
+# --- Alert persistence ---
+def _ensure_alerts_file():
+    if not os.path.exists(ALERTS_LOG_FILE):
+        with open(ALERTS_LOG_FILE, 'w', encoding='utf-8') as f:
+            f.write('alert_id\tcreated_at\tstate\tstart_time\tend_time\tstart_fuel\tend_fuel\tdelta\tduration_s\tavg_rate\tconfidence\n')
+
+
+def _parse_alert_line(line):
+    parts = line.strip().split('\t')
+    if len(parts) < 11 or parts[0] == 'alert_id':
+        return None
+    try:
+        return {
+            'id': parts[0],
+            'created_at': parts[1],
+            'state': parts[2],
+            'start_time': parts[3],
+            'end_time': parts[4],
+            'start_fuel': float(parts[5]),
+            'end_fuel': float(parts[6]),
+            'delta': float(parts[7]),
+            'duration_s': int(parts[8]),
+            'avg_rate': float(parts[9]),
+            'confidence': float(parts[10])
+        }
+    except ValueError:
+        return None
+
+
+def load_alerts_log():
+    global alerts_buffer, seen_alert_ids
+    _ensure_alerts_file()
+    alerts_buffer = []
+    seen_alert_ids = set()
+    with open(ALERTS_LOG_FILE, 'r', encoding='utf-8') as f:
+        for line in f:
+            alert = _parse_alert_line(line)
+            if alert:
+                alerts_buffer.append(alert)
+                seen_alert_ids.add(alert['id'])
+
+
+def append_alert(alert):
+    if alert['id'] in seen_alert_ids:
+        return
+    seen_alert_ids.add(alert['id'])
+    alerts_buffer.append(alert)
+    with open(ALERTS_LOG_FILE, 'a', encoding='utf-8') as f:
+        f.write('\t'.join([
+            alert['id'],
+            alert['created_at'],
+            alert['state'],
+            alert['start_time'],
+            alert['end_time'],
+            f"{alert['start_fuel']:.2f}",
+            f"{alert['end_fuel']:.2f}",
+            f"{alert['delta']:.2f}",
+            str(alert['duration_s']),
+            f"{alert['avg_rate']:.4f}",
+            f"{alert['confidence']:.4f}"
+        ]) + '\n')
+
+
+def build_events_from_processed(rows):
+    events = []
+    prev_state = None
+    current = None
+
+    def make_idle_event(event_state, item):
+        return {
+            'id': f"{item['Timestamp'].isoformat()}_{event_state}_{float(item['Fuel']):.2f}",
+            'state': event_state,
+            'start_time': item['Timestamp'].isoformat(),
+            'end_time': item['Timestamp'].isoformat(),
+            'start_fuel': float(item['Fuel']),
+            'end_fuel': float(item['Fuel']),
+            'delta': 0.0,
+            'duration_s': 0,
+            'avg_rate': 0.0,
+            'confidence': float(item.get('Confidence', 0) or 0),
+            'created_at': item['Timestamp'].isoformat()
+        }
+
+    def close_segment(segment):
+        start = segment['start_time']
+        end = segment['end_time']
+        duration_s = int((end - start).total_seconds())
+        delta = segment['end_fuel'] - segment['start_fuel']
+        avg_conf = sum(segment['confidences']) / len(segment['confidences']) if segment['confidences'] else 0.0
+        return {
+            'id': f"{start.isoformat()}_{segment['state']}_{segment['start_fuel']:.2f}_{segment['end_fuel']:.2f}",
+            'state': segment['state'],
+            'start_time': start.isoformat(),
+            'end_time': end.isoformat(),
+            'start_fuel': segment['start_fuel'],
+            'end_fuel': segment['end_fuel'],
+            'delta': round(delta, 2),
+            'duration_s': duration_s,
+            'avg_rate': round((delta / duration_s * 60) if duration_s else 0.0, 4),
+            'confidence': round(avg_conf, 4),
+            'created_at': end.isoformat()
+        }
+
+    for item in rows:
+        state = item.get('Prediction')
+        fuel = float(item['Fuel'])
+        confidence = float(item.get('Confidence', 0) or 0)
+
+        if prev_state is None:
+            if state == 'Idle':
+                events.append(make_idle_event('Idle Start', item))
+            if state in ['Refuel', 'Fuel Theft']:
+                current = {
+                    'state': state,
+                    'start_time': item['Timestamp'],
+                    'end_time': item['Timestamp'],
+                    'start_fuel': fuel,
+                    'end_fuel': fuel,
+                    'confidences': [confidence]
+                }
+        else:
+            if state != prev_state:
+                if prev_state == 'Idle':
+                    events.append(make_idle_event('Idle End', item))
+                if state == 'Idle':
+                    events.append(make_idle_event('Idle Start', item))
+                if prev_state in ['Refuel', 'Fuel Theft'] and current is not None:
+                    events.append(close_segment(current))
+                    current = None
+                if state in ['Refuel', 'Fuel Theft']:
+                    current = {
+                        'state': state,
+                        'start_time': item['Timestamp'],
+                        'end_time': item['Timestamp'],
+                        'start_fuel': fuel,
+                        'end_fuel': fuel,
+                        'confidences': [confidence]
+                    }
+            elif state in ['Refuel', 'Fuel Theft'] and current is not None:
+                current['end_time'] = item['Timestamp']
+                current['end_fuel'] = fuel
+                current['confidences'].append(confidence)
+
+        prev_state = state
+
+    if current is not None:
+        events.append(close_segment(current))
+
+    return list(reversed(events))
+
+
+def update_alerts_from_processed_buffer():
+    events = build_events_from_processed(processed_buffer)
+    for event in events:
+        append_alert(event)
+
 
 # --- HÀM TIỆN ÍCH ---
 def rebuild_processed_buffer():
@@ -73,6 +233,7 @@ def rebuild_processed_buffer():
                 "Confidence": row['Confidence']
             })
         processed_buffer = new_buffer
+        update_alerts_from_processed_buffer()
     except Exception as e:
         print(f"❌ Lỗi trong rebuild_processed_buffer: {e}")
         traceback.print_exc()
@@ -109,6 +270,9 @@ def load_initial_data_from_csv():
     except Exception as e:
         print(f"❌ Lỗi khi đọc CSV: {e}")
         traceback.print_exc()
+
+# Nạp alerts từ file nếu tồn tại
+load_alerts_log()
 
 # Nạp dữ liệu ban đầu
 load_initial_data_from_csv()
@@ -281,9 +445,16 @@ def api_realtime():
 
 @app.route('/api/events')
 def api_events():
-    with simulator.lock:
-        events = simulator.events.copy()
+    with buffer_lock:
+        if not processed_buffer:
+            return jsonify([])
+        events = build_events_from_processed(processed_buffer)
     return jsonify(events)
+
+@app.route('/api/alerts')
+def api_alerts():
+    with buffer_lock:
+        return jsonify(alerts_buffer[-50:])
 
 @app.route('/api/dashboard')
 def api_dashboard():
@@ -302,8 +473,7 @@ def api_dashboard():
                 "last_update": pd.Timestamp.now().isoformat()
             })
         last = processed_buffer[-1]
-        with simulator.lock:
-            event_count = len([e for e in simulator.events if e['state'] in ['Refuel', 'Fuel Theft']])
+        alert_count = len(alerts_buffer)
     return jsonify({
         "vehicle": "VN001",
         "fuel": last['Fuel'],
@@ -313,7 +483,7 @@ def api_dashboard():
         "r2": last['RegressionR2'],
         "confidence": last.get('Confidence', 0.0),
         "stop_duration": last['StopDuration'],
-        "alerts": event_count,
+        "alerts": alert_count,
         "last_update": last['Timestamp'].isoformat()
     })
 
