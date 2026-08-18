@@ -1,0 +1,38 @@
+{
+  "model_name": "cnn_gru",
+  "timestamp": "20260815_075909",
+  "resumed_from": null,
+  "best_val_loss": Infinity,
+  "best_val_acc": 0.0,
+  "best_epoch": 0,
+  "test_metrics": {
+    "accuracy": 0.9063545150501672,
+    "balanced_accuracy": 0.88005887179221,
+    "precision_macro": 0.8821345369831101,
+    "precision_weighted": 0.9076566334785459,
+    "precision_micro": 0.9063545150501672,
+    "recall_macro": 0.88005887179221,
+    "recall_weighted": 0.9063545150501672,
+    "recall_micro": 0.9063545150501672,
+    "f1_macro": 0.8771617289463334,
+    "f1_weighted": 0.9052434232398743,
+    "f1_micro": 0.9063545150501672,
+    "cohen_kappa": 0.8419400667393531,
+    "mcc": 0.842816696761946,
+    "roc_auc_ovr": 0.9681913242211029,
+    "avg_precision": 0.9445170180323884
+  },
+  "model_info": {
+    "model_name": "CNNGRUClassifier",
+    "total_params": 386628,
+    "trainable_params": 386628,
+    "model_size_mb": 1.47,
+    "input_dim": 4,
+    "hidden_dim": 128,
+    "feature_dim": 21,
+    "num_classes": 4,
+    "fusion_type": "concat",
+    "fusion_dim": 256
+  },
+  "training_time_per_epoch": 30.63806915283203
+}

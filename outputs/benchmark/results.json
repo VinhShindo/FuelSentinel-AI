@@ -1,0 +1,281 @@
+{
+  "bilstm": {
+    "model_name": "bilstm",
+    "output_dir": "outputs\\benchmark\\bilstm",
+    "model_path": "outputs\\benchmark\\bilstm\\checkpoints\\best_model.pt",
+    "training_time_seconds": 1584.163194656372,
+    "inference_time_per_sample": 0.04210527818211,
+    "best_val_loss": 0.4071671533544389,
+    "best_val_acc": 0.8701517706576728,
+    "best_epoch": 29,
+    "total_params": 727812,
+    "model_size_mb": 2.78,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.7962962962962963,
+        "balanced_accuracy": 0.3422413793103448,
+        "precision_macro": 0.6964601769911505,
+        "precision_weighted": 0.7877327850779179,
+        "precision_micro": 0.7962962962962963,
+        "recall_macro": 0.3422413793103448,
+        "recall_weighted": 0.7962962962962963,
+        "recall_micro": 0.7962962962962963,
+        "f1_macro": 0.3676625015062944,
+        "f1_weighted": 0.7340666669929115,
+        "f1_micro": 0.7962962962962963,
+        "cohen_kappa": 0.277561112898038,
+        "mcc": 0.3988419598815113,
+        "roc_auc_ovr": 0.8700965790460761,
+        "avg_precision": 0.8435953997857726
+      }
+    }
+  },
+  "gru": {
+    "model_name": "gru",
+    "output_dir": "outputs\\benchmark\\gru",
+    "model_path": "outputs\\benchmark\\gru\\checkpoints\\best_model.pt",
+    "training_time_seconds": 1541.567170381546,
+    "inference_time_per_sample": 0.04158387481162845,
+    "best_val_loss": 0.394080377700558,
+    "best_val_acc": 0.8836424957841484,
+    "best_epoch": 28,
+    "total_params": 313092,
+    "model_size_mb": 1.19,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.8535353535353535,
+        "balanced_accuracy": 0.583228779391182,
+        "precision_macro": 0.8100334311806915,
+        "precision_weighted": 0.8551191958726205,
+        "precision_micro": 0.8535353535353535,
+        "recall_macro": 0.583228779391182,
+        "recall_weighted": 0.8535353535353535,
+        "recall_micro": 0.8535353535353535,
+        "f1_macro": 0.6560500290866783,
+        "f1_weighted": 0.8360089159972813,
+        "f1_micro": 0.8535353535353535,
+        "cohen_kappa": 0.5714534493195896,
+        "mcc": 0.605717155935131,
+        "roc_auc_ovr": 0.8788456490881646,
+        "avg_precision": 0.8801154551975583
+      }
+    }
+  },
+  "bigru": {
+    "model_name": "bigru",
+    "output_dir": "outputs\\benchmark\\bigru",
+    "model_path": "outputs\\benchmark\\bigru\\checkpoints\\best_model.pt",
+    "training_time_seconds": 1578.7249376773834,
+    "inference_time_per_sample": 0.04186691017664643,
+    "best_val_loss": 0.42566489002354835,
+    "best_val_acc": 0.8499156829679595,
+    "best_epoch": 24,
+    "total_params": 594692,
+    "model_size_mb": 2.27,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.8535353535353535,
+        "balanced_accuracy": 0.6364940858544863,
+        "precision_macro": 0.7276890699021846,
+        "precision_weighted": 0.8508933385982566,
+        "precision_micro": 0.8535353535353535,
+        "recall_macro": 0.6364940858544863,
+        "recall_weighted": 0.8535353535353535,
+        "recall_micro": 0.8535353535353535,
+        "f1_macro": 0.6733471841244585,
+        "f1_weighted": 0.8465570222115105,
+        "f1_micro": 0.8535353535353535,
+        "cohen_kappa": 0.6091573263148342,
+        "mcc": 0.6182685983919606,
+        "roc_auc_ovr": 0.8809678610244697,
+        "avg_precision": 0.8790869574233202
+      }
+    }
+  },
+  "cnn_bilstm": {
+    "model_name": "cnn_bilstm",
+    "output_dir": "outputs\\benchmark\\cnn_bilstm",
+    "model_path": "outputs\\benchmark\\cnn_bilstm\\checkpoints\\best_model.pt",
+    "training_time_seconds": 1614.5854241847992,
+    "inference_time_per_sample": 0.04153143918072736,
+    "best_val_loss": 0.40525932396443254,
+    "best_val_acc": 0.8836424957841484,
+    "best_epoch": 28,
+    "total_params": 880708,
+    "model_size_mb": 3.36,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.8114478114478114,
+        "balanced_accuracy": 0.4523031513159433,
+        "precision_macro": 0.8423005565862709,
+        "precision_weighted": 0.8307669563080818,
+        "precision_micro": 0.8114478114478114,
+        "recall_macro": 0.4523031513159433,
+        "recall_weighted": 0.8114478114478114,
+        "recall_micro": 0.8114478114478114,
+        "f1_macro": 0.49391999871804415,
+        "f1_weighted": 0.7696134567895665,
+        "f1_micro": 0.8114478114478114,
+        "cohen_kappa": 0.39470475843872255,
+        "mcc": 0.46082830729714935,
+        "roc_auc_ovr": 0.8667438960389923,
+        "avg_precision": 0.8644194829920482
+      }
+    }
+  },
+  "cnn_gru": {
+    "model_name": "cnn_gru",
+    "output_dir": "outputs\\benchmark\\cnn_gru",
+    "model_path": "outputs\\benchmark\\cnn_gru\\checkpoints\\best_model.pt",
+    "training_time_seconds": 1581.1396262645721,
+    "inference_time_per_sample": 0.041837111868039525,
+    "best_val_loss": 0.4231960064846187,
+    "best_val_acc": 0.8650927487352446,
+    "best_epoch": 30,
+    "total_params": 386628,
+    "model_size_mb": 1.47,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.8501683501683501,
+        "balanced_accuracy": 0.6545552365491187,
+        "precision_macro": 0.7323272330347722,
+        "precision_weighted": 0.8484006630079879,
+        "precision_micro": 0.8501683501683501,
+        "recall_macro": 0.6545552365491187,
+        "recall_weighted": 0.8501683501683501,
+        "recall_micro": 0.8501683501683501,
+        "f1_macro": 0.6834923996191601,
+        "f1_weighted": 0.8433212201244638,
+        "f1_micro": 0.8501683501683501,
+        "cohen_kappa": 0.6028606413906564,
+        "mcc": 0.6111663078633874,
+        "roc_auc_ovr": 0.8595123165646603,
+        "avg_precision": 0.8486326239099186
+      }
+    }
+  },
+  "transformer": {
+    "model_name": "transformer",
+    "output_dir": "outputs\\benchmark\\transformer",
+    "model_path": "outputs\\benchmark\\transformer\\checkpoints\\best_model.pt",
+    "training_time_seconds": 2112.389335155487,
+    "inference_time_per_sample": 0.04203616930579497,
+    "best_val_loss": Infinity,
+    "best_val_acc": 0.0,
+    "best_epoch": 0,
+    "total_params": 758020,
+    "model_size_mb": 2.89,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.7474747474747475,
+        "balanced_accuracy": 0.25,
+        "precision_macro": 0.18686868686868688,
+        "precision_weighted": 0.5587184981124375,
+        "precision_micro": 0.7474747474747475,
+        "recall_macro": 0.25,
+        "recall_weighted": 0.7474747474747475,
+        "recall_micro": 0.7474747474747475,
+        "f1_macro": 0.2138728323699422,
+        "f1_weighted": 0.6394581654697261,
+        "f1_micro": 0.7474747474747475,
+        "cohen_kappa": 0.0,
+        "mcc": 0.0,
+        "roc_auc_ovr": NaN,
+        "avg_precision": NaN
+      }
+    }
+  },
+  "tcn": {
+    "model_name": "tcn",
+    "output_dir": "outputs\\benchmark\\tcn",
+    "model_path": "outputs\\benchmark\\tcn\\checkpoints\\best_model.pt",
+    "training_time_seconds": 2730.196984767914,
+    "inference_time_per_sample": 0.04789720480690902,
+    "best_val_loss": 0.3896584866621844,
+    "best_val_acc": 0.863406408094435,
+    "best_epoch": 27,
+    "total_params": 619588,
+    "model_size_mb": 2.36,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.835016835016835,
+        "balanced_accuracy": 0.5233664699181941,
+        "precision_macro": 0.5709862601166948,
+        "precision_weighted": 0.7914625266403923,
+        "precision_micro": 0.835016835016835,
+        "recall_macro": 0.5233664699181941,
+        "recall_weighted": 0.835016835016835,
+        "recall_micro": 0.835016835016835,
+        "f1_macro": 0.5389473684210526,
+        "f1_weighted": 0.805973182113533,
+        "f1_micro": 0.835016835016835,
+        "cohen_kappa": 0.522695965890456,
+        "mcc": 0.5491831415437239,
+        "roc_auc_ovr": 0.8632233097752049,
+        "avg_precision": 0.855962819204607
+      }
+    }
+  },
+  "lstm_attention": {
+    "model_name": "lstm_attention",
+    "output_dir": "outputs\\benchmark\\lstm_attention",
+    "model_path": "outputs\\benchmark\\lstm_attention\\checkpoints\\best_model.pt",
+    "training_time_seconds": 3456.392011642456,
+    "inference_time_per_sample": 0.04461984883253823,
+    "best_val_loss": 0.43341933082770334,
+    "best_val_acc": 0.8549747048903878,
+    "best_epoch": 30,
+    "total_params": 926212,
+    "model_size_mb": 3.53,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.8400673400673401,
+        "balanced_accuracy": 0.5606493451181994,
+        "precision_macro": 0.7396683899159147,
+        "precision_weighted": 0.8310525807825537,
+        "precision_micro": 0.8400673400673401,
+        "recall_macro": 0.5606493451181994,
+        "recall_weighted": 0.8400673400673401,
+        "recall_micro": 0.8400673400673401,
+        "f1_macro": 0.619298342001807,
+        "f1_weighted": 0.8221331943220449,
+        "f1_micro": 0.8400673400673401,
+        "cohen_kappa": 0.5401540154015402,
+        "mcc": 0.5654799752093398,
+        "roc_auc_ovr": 0.8703483403272336,
+        "avg_precision": 0.8636384779141051
+      }
+    }
+  },
+  "gru_attention": {
+    "model_name": "gru_attention",
+    "output_dir": "outputs\\benchmark\\gru_attention",
+    "model_path": "outputs\\benchmark\\gru_attention\\checkpoints\\best_model.pt",
+    "training_time_seconds": 3453.2532086372375,
+    "inference_time_per_sample": 0.04439771657038217,
+    "best_val_loss": 0.43303202899270277,
+    "best_val_acc": 0.8583473861720068,
+    "best_epoch": 30,
+    "total_params": 793092,
+    "model_size_mb": 3.03,
+    "metrics": {
+      "overall": {
+        "accuracy": 0.8468013468013468,
+        "balanced_accuracy": 0.6253729953535292,
+        "precision_macro": 0.7351534828807557,
+        "precision_weighted": 0.8517766209914971,
+        "precision_micro": 0.8468013468013468,
+        "recall_macro": 0.6253729953535292,
+        "recall_weighted": 0.8468013468013468,
+        "recall_micro": 0.8468013468013468,
+        "f1_macro": 0.6634556996779903,
+        "f1_weighted": 0.840176110869498,
+        "f1_micro": 0.8468013468013468,
+        "cohen_kappa": 0.5883952027412906,
+        "mcc": 0.5995448830226616,
+        "roc_auc_ovr": 0.8711051726846886,
+        "avg_precision": 0.8652266480163293
+      }
+    }
+  }
+}

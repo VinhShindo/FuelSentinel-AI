@@ -57,6 +57,7 @@
         <button class="btn-page" id="btn-realtime-next" onclick="changeRealtimePage(1)">Next</button>
     </div>
 </div>
+{% endblock %}
 
 {% block scripts %}
 <script>
@@ -68,6 +69,7 @@
         let realtimeData = [];
         let currentRealtimePage = 1;
         const itemsPerRealtimePage = 15;
+        let pollingInterval = null;
 
         function updateKPI(raw, processed) {
             document.getElementById('kpi-fuel').innerText = raw.Fuel?.toFixed(2) || '--';
@@ -88,7 +90,14 @@
             pageData.forEach(item => {
                 const tr = document.createElement('tr');
                 const badge = STATE_BADGES[item.processed.Prediction] || 'secondary';
-                const time = item.raw.Timestamp.split('T')[1].substring(0, 8);
+                
+                let time = '--';
+                if (item.raw.Timestamp) {
+                    if (item.raw.Timestamp.includes('T')) time = item.raw.Timestamp.split('T')[1].substring(0, 8);
+                    else if (item.raw.Timestamp.includes(' ')) time = item.raw.Timestamp.split(' ')[1].substring(0, 8);
+                    else time = item.raw.Timestamp.substring(0, 8);
+                }
+
                 tr.innerHTML = `
                     <td>${time}</td>
                     <td><strong>${item.raw.Fuel.toFixed(2)} L</strong></td>
@@ -117,30 +126,60 @@
             }
         };
 
-        async function init() {
+        async function loadHistory(carId) {
+            if (!carId) return; // Chặn lỗi undefined
             try {
-                const res = await fetch('/api/realtime');
+                const res = await fetch(`/api/history?car_id=${carId}`);
                 const data = await res.json();
-                updateKPI(data.raw, data.processed);
-                // SỬA LỖI: Dùng unshift để mới nhất nằm đầu mảng, đồng bộ với logic interval bên dưới
-                realtimeData.unshift({ raw: data.raw, processed: data.processed });
-                if(realtimeData.length > 200) realtimeData.pop();
-                renderRealtimeTable();
-            } catch (e) { console.error("Lỗi khởi tạo:", e); }
+                if (Array.isArray(data)) {
+                    realtimeData = data.reverse().map(item => ({
+                        raw: item.raw,
+                        processed: item.processed
+                    }));
+                    if (realtimeData.length > 0) {
+                        updateKPI(realtimeData[0].raw, realtimeData[0].processed);
+                    }
+                    renderRealtimeTable();
+                }
+            } catch (e) { console.error("Lỗi tải lịch sử:", e); }
         }
-        init();
 
-        setInterval(async () => {
+        async function pollLatest(carId) {
+            if (!carId) return; // Chặn lỗi undefined
             try {
-                const res = await fetch('/api/realtime');
+                const res = await fetch(`/api/realtime?car_id=${carId}`);
                 const data = await res.json();
-                updateKPI(data.raw, data.processed);
-                realtimeData.unshift({ raw: data.raw, processed: data.processed });
-                if(realtimeData.length > 200) realtimeData.pop();
-                renderRealtimeTable();
-            } catch(e) {  }
-        }, 1000);
+                if (data && data.raw && data.raw.Timestamp) {
+                    if (realtimeData.length === 0 || data.raw.Timestamp !== realtimeData[0].raw.Timestamp) {
+                        updateKPI(data.raw, data.processed);
+                        realtimeData.unshift({ raw: data.raw, processed: data.processed });
+                        if (realtimeData.length > 200) realtimeData.pop();
+                        renderRealtimeTable();
+                    }
+                }
+            } catch(e) { /* Silent fail */ }
+        }
+
+        async function init(carId) {
+            if (!carId) return;
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+            realtimeData = [];
+            await loadHistory(carId);
+            pollingInterval = setInterval(() => pollLatest(carId), 1000);
+        }
+
+        document.addEventListener('vehicleChanged', function(e) {
+            init(e.detail.carId);
+        });
+
+        if (window.currentVehicle) {
+            init(window.currentVehicle);
+        } else {
+            init('Car 2');
+        }
     });
 </script>
-{% endblock %}
 {% endblock %}

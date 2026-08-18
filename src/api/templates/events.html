@@ -12,14 +12,22 @@
 </div>
 <div class="table-shell">
     <div class="table-toolbar">
+        <!-- Filter Buttons -->
         <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-sm btn-outline-success" id="filter-refuel">⛽ Refuel</button>
-            <button class="btn btn-sm btn-outline-danger" id="filter-theft">⚠️ Theft</button>
-            <button class="btn btn-sm btn-outline-secondary" id="filter-all">All</button>
+            <button class="btn btn-sm btn-outline-secondary active" id="filter-all" data-state="all">All</button>
+            <button class="btn btn-sm btn-outline-primary" id="filter-driving" data-state="Driving">Driving</button>
+            <button class="btn btn-sm btn-outline-secondary" id="filter-idle" data-state="Idle">Idle</button>
+            <button class="btn btn-sm btn-outline-success" id="filter-refuel" data-state="Refuel">Refuel</button>
+            <button class="btn btn-sm btn-outline-danger" id="filter-theft" data-state="Theft">Theft</button>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-            <input type="text" class="table-search" placeholder="Search events..." aria-label="Search events">
-            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export CSV</button>
+            <input type="text" class="table-search" id="search-events" placeholder="Search events..."
+                aria-label="Search events">
+
+            <!-- [FIX] Đổi nút Export CSV thành nút mở Modal -->
+            <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#reportModal">
+                <i class="bi bi-file-earmark-excel"></i> Xuất báo cáo Excel
+            </button>
         </div>
     </div>
     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
@@ -46,108 +54,146 @@
         <button class="btn-page" id="btn-events-next" onclick="changeEventsPage(1)">Next</button>
     </div>
 </div>
+
+<!-- [FIX] Thêm Modal Popup chọn điều kiện báo cáo -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportModalLabel"><i class="bi bi-file-earmark-spreadsheet"></i> Tạo báo cáo
+                    Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="reportCarId" class="form-label">Biển số xe</label>
+                    <input type="text" class="form-control" id="reportCarId" value="{{ current_car }}" disabled>
+                    <div class="form-text">Báo cáo sẽ được tạo cho xe hiện tại.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="reportEventType" class="form-label">Trạng thái sự kiện</label>
+                    <select class="form-select" id="reportEventType">
+                        <option value="All">Tất cả trạng thái</option>
+                        <option value="Driving">Driving</option>
+                        <option value="Idle">Idle</option>
+                        <option value="Refuel">Refuel</option>
+                        <option value="Theft">Theft</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="reportStartDate" class="form-label">Từ ngày (Bắt đầu)</label>
+                    <input type="date" class="form-control" id="reportStartDate" required>
+                </div>
+                <div class="mb-3">
+                    <label for="reportEndDate" class="form-label">Đến ngày (Kết thúc)</label>
+                    <input type="date" class="form-control" id="reportEndDate" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success" onclick="downloadReport()"><i class="bi bi-download"></i>
+                    Tải xuống</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Format timestamp to HH:MM:SS - DD/MM/YYYY
-    function formatTimestamp(isoString) {
-        if (!isoString) return '--';
-        try {
-            const date = new Date(isoString);
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
-        } catch(e) {
-            return isoString;
-        }
-    }
-    
     document.addEventListener('DOMContentLoaded', function() {
-        let allRawData = [];
-        let filteredEvents = [];
         let allEvents = [];
         let currentEventsPage = 1;
-        const itemsPerEventsPage = 10;
         let currentFilter = 'all';
+        let searchQuery = '';
+        const itemsPerPage = 10;
+        let currentCarId = window.currentVehicle || 'Car 2';
 
-        function processEvents(data) {
-            const rawData = data.map(d => d.raw);
-            const processedData = data.map(d => d.processed);
-            const events = [];
-            let currentEvent = null;
-            
-            for(let i = 0; i < rawData.length; i++) {
-                const state = processedData[i].Prediction;
-                if(state === 'Refuel' || state === 'Fuel Theft') {
-                    if(!currentEvent) {
-                        currentEvent = { state: state, startIdx: i, rows: [rawData[i]], confidences: [processedData[i].Confidence] };
-                    } else {
-                        currentEvent.rows.push(rawData[i]);
-                        currentEvent.confidences.push(processedData[i].Confidence);
-                    }
-                } else {
-                    if(currentEvent) {
-                        const start = currentEvent.rows[0];
-                        const end = currentEvent.rows[currentEvent.rows.length - 1];
-                        const delta = end.Fuel - start.Fuel;
-                        const timeStart = new Date(start.Timestamp);
-                        const timeEnd = new Date(end.Timestamp);
-                        const durationSec = (timeEnd - timeStart) / 1000;
-                        const avgConfidence = currentEvent.confidences.reduce((a, b) => a + b, 0) / currentEvent.confidences.length;
-                        events.push({
-                            state: currentEvent.state,
-                            startTime: start.Timestamp,
-                            endTime: end.Timestamp,
-                            startFuel: start.Fuel,
-                            endFuel: end.Fuel,
-                            delta: delta,
-                            duration: durationSec.toFixed(0),
-                            avgRate: durationSec !== 0 ? (delta / durationSec) * 60 : 0,
-                            confidence: avgConfidence
-                        });
-                        currentEvent = null;
-                    }
-                }
-            }
-            // Sửa lỗi: Đảo ngược để mới nhất lên đầu
-            return events.reverse(); 
+        const STATE_BADGE = {
+            'Driving': 'primary',
+            'Idle': 'secondary',
+            'Refuel': 'success',
+            'Theft': 'danger'
+        };
+        function badgeClassFor(state) {
+            return STATE_BADGE[state] || 'secondary';
+        }
+
+        // [FIX] Format thời gian dạng giờ:phút:giây - ngày/tháng/năm
+        function formatHumanDate(isoString) {
+            if (!isoString) return '--';
+            try {
+                const date = new Date(isoString);
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+            } catch(e) { return isoString; }
+        }
+
+        // [FIX] Format thời lượng dạng 1h 20m 30s
+        function formatDuration(seconds) {
+            if (!seconds || seconds === 0) return '--';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            let parts = [];
+            if (h > 0) parts.push(`${h}h`);
+            if (m > 0) parts.push(`${m}m`);
+            if (s > 0 || parts.length === 0) parts.push(`${s}s`);
+            return parts.join(' ');
         }
 
         function renderEventsTable() {
             const tbody = document.getElementById('events-tbody');
             tbody.innerHTML = '';
-            
-            const eventsToRender = currentFilter === 'all' ? allEvents : allEvents.filter(e => e.state === currentFilter);
-            filteredEvents = eventsToRender;
 
-            const start = (currentEventsPage - 1) * itemsPerEventsPage;
-            const end = start + itemsPerEventsPage;
-            const pageData = filteredEvents.slice(start, end);
+            let filteredByType = allEvents;
+            if (currentFilter !== 'all') {
+                filteredByType = allEvents.filter(e => e && e.state === currentFilter);
+            }
 
-            pageData.forEach(ev => {
-                const icon = ev.state === 'Refuel' ? '⛽' : '⚠️';
-                const badge = ev.state === 'Refuel' ? 'success' : 'danger';
-                const startTime = formatTimestamp(ev.startTime);
-                const endTime = formatTimestamp(ev.endTime);
-                const deltaStr = ev.delta > 0 ? `+${ev.delta.toFixed(2)}` : ev.delta.toFixed(2);
-                const avgRateStr = ev.avgRate > 0 ? `+${ev.avgRate.toFixed(2)}` : `${ev.avgRate.toFixed(2)}`;
-                
-                tbody.innerHTML += `<tr>
-                    <td>${startTime}</td>
-                    <td>${endTime}</td>
-                    <td>${ev.startFuel.toFixed(2)} L</td>
-                    <td>${ev.endFuel.toFixed(2)} L</td>
-                    <td><span class="fw-bold text-${badge}">${deltaStr} L</span></td>
-                    <td>${ev.duration}s</td>
-                    <td>${avgRateStr} L/min</td>
-                    <td><span class="badge bg-${badge} px-3 py-1">${icon} ${ev.state}</span></td>
-                    <td>${ev.confidence > 0 ? ev.confidence.toFixed(2) + '%' : 'N/A'}</td>
-                </tr>`;
-            });
+            let finalData = filteredByType;
+            if (searchQuery.trim() !== '') {
+                const keyword = searchQuery.trim().toLowerCase();
+                finalData = filteredByType.filter(ev => {
+                    if (!ev) return false;
+                    return (ev.start_time || '').toLowerCase().includes(keyword) ||
+                           (ev.end_time || '').toLowerCase().includes(keyword) ||
+                           (ev.state || '').toLowerCase().includes(keyword) ||
+                           (ev.start_fuel || '').toString().includes(keyword) ||
+                           (ev.end_fuel || '').toString().includes(keyword);
+                });
+            }
 
-            const totalPages = Math.ceil(filteredEvents.length / itemsPerEventsPage) || 1;
+            const start = (currentEventsPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = finalData.slice(start, end);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">Không tìm thấy sự kiện nào.</td></tr>`;
+            } else {
+                pageData.forEach(ev => {
+                    const badgeClass = badgeClassFor(ev?.state);
+                    const deltaStr = ev?.delta != null ? (ev.delta > 0 ? `+${ev.delta.toFixed(2)}` : ev.delta.toFixed(2)) : '--';
+                    const rateLh = ev?.avg_rate != null ? (ev.avg_rate * 60).toFixed(2) : '--';
+
+                    tbody.innerHTML += `<tr>
+                        <td>${formatHumanDate(ev?.start_time)}</td>
+                        <td>${formatHumanDate(ev?.end_time)}</td>
+                        <td>${ev?.start_fuel != null ? ev.start_fuel.toFixed(2) : '--'} L</td>
+                        <td>${ev?.end_fuel != null ? ev.end_fuel.toFixed(2) : '--'} L</td>
+                        <td><span class="fw-bold text-${badgeClass}">${deltaStr} L</span></td>
+                        <td>${formatDuration(ev?.duration_s)}</td>
+                        <td>${rateLh} L/h</td>
+                        <td><span class="badge bg-${badgeClass} px-3 py-1">${ev?.state || 'Unknown'}</span></td>
+                        <td>${ev?.max_confidence != null ? ev.max_confidence.toFixed(2) + '%' : 'N/A'}</td>
+                    </tr>`;
+                });
+            }
+
+            const totalPages = Math.ceil(finalData.length / itemsPerPage) || 1;
             if (currentEventsPage > totalPages) currentEventsPage = totalPages;
             document.getElementById('events-page-info').innerText = `Page ${currentEventsPage} / ${totalPages}`;
             document.getElementById('btn-events-prev').disabled = currentEventsPage === 1;
@@ -155,7 +201,7 @@
         }
 
         window.changeEventsPage = function(delta) {
-            const totalPages = Math.ceil(filteredEvents.length / itemsPerEventsPage) || 1;
+            const totalPages = Math.ceil(allEvents.length / itemsPerPage) || 1;
             const newPage = currentEventsPage + delta;
             if (newPage >= 1 && newPage <= totalPages) {
                 currentEventsPage = newPage;
@@ -163,29 +209,109 @@
             }
         };
 
-        document.getElementById('filter-refuel').onclick = function() { currentFilter = 'Refuel'; currentEventsPage = 1; renderEventsTable(); };
-        document.getElementById('filter-theft').onclick = function() { currentFilter = 'Fuel Theft'; currentEventsPage = 1; renderEventsTable(); };
-        document.getElementById('filter-all').onclick = function() { currentFilter = 'all'; currentEventsPage = 1; renderEventsTable(); };
-
-        async function fetchEventsData() {
-            try {
-                const res = await fetch('/api/events');
-                const events = await res.json();
-                if (!Array.isArray(events)) {
-                    throw new Error('Invalid events payload');
-                }
-                allEvents = events.map(ev => ({
-                    ...ev,
-                    duration: Number(ev.duration_s || ev.duration || 0),
-                    avgRate: Number(ev.avg_rate || ev.avgRate || 0),
-                    confidence: Number(ev.confidence || 0)
-                }));
+        const filterButtons = document.querySelectorAll('[id^="filter-"]');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentFilter = this.dataset.state;
+                currentEventsPage = 1;
+                filterButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
                 renderEventsTable();
+            });
+        });
+
+        document.getElementById('search-events').addEventListener('input', function(e) {
+            searchQuery = e.target.value;
+            currentEventsPage = 1;
+            renderEventsTable();
+        });
+
+        // Hàm Export CSV (không dùng nữa vì đã chuyển sang báo cáo Excel, nhưng giữ lại nếu cần)
+        window.exportCSV = function() {
+            if (allEvents.length === 0) return alert('Không có dữ liệu để export!');
+            let csv = "Start Time,End Time,Start Fuel,End Fuel,Delta,Duration,Rate,Type,Confidence\n";
+            allEvents.forEach(ev => {
+                csv += `${ev.start_time},${ev.end_time},${ev.start_fuel},${ev.end_fuel},${ev.delta},${ev.duration_s},${ev.avg_rate*60},${ev.state},${ev.max_confidence}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'FuelSentinel_Events.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        // Hàm gọi API tạo báo cáo Excel (Giữ nguyên vì đã cập nhật)
+        window.downloadReport = function() {
+            const carId = document.getElementById('reportCarId').value;
+            const eventType = document.getElementById('reportEventType').value;
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+
+            if (!startDate || !endDate) {
+                alert("Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc.");
+                return;
+            }
+            if (new Date(startDate) > new Date(endDate)) {
+                alert("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+                return;
+            }
+
+            fetch('/api/download_report', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    car_id: carId,
+                    event_type: eventType,
+                    start_date: startDate,
+                    end_date: endDate
+                })
+            })
+            .then(response => {
+                if (response.ok) return response.blob();
+                throw new Error('Lỗi khi tạo báo cáo');
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `FuelSentinel_Report_${carId}_${startDate}_to_${endDate}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                const modalEl = document.getElementById('reportModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+            })
+            .catch(err => {
+                alert('Không thể tải báo cáo: ' + err.message);
+            });
+        };
+
+        async function fetchEventsData(carId) {
+            if (!carId) return;
+            try {
+                const res = await fetch(`/api/event_log?car_id=${carId}&limit=1000`);
+                const data = await res.json();
+                if (data && data.events && Array.isArray(data.events)) {
+                    allEvents = data.events.filter(ev => ev !== null && ev !== undefined);
+                    renderEventsTable();
+                }
             } catch(e) { console.error("Lỗi fetch events:", e); }
         }
 
-        fetchEventsData();
-        setInterval(fetchEventsData, 3000);
+        document.addEventListener('vehicleChanged', function(e) {
+            currentCarId = e.detail.carId;
+            document.getElementById('reportCarId').value = currentCarId;
+            fetchEventsData(currentCarId);
+        });
+
+        fetchEventsData(currentCarId);
+        setInterval(() => {
+            if (currentCarId) fetchEventsData(currentCarId);
+        }, 3000);
     });
 </script>
 {% endblock %}

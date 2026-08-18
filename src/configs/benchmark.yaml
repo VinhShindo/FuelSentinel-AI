@@ -1,0 +1,129 @@
+# =============================================================================
+# Benchmark Configuration - FuelSentinel-AI
+# =============================================================================
+
+project: "FuelSentinel-AI"
+phase: "benchmark"
+seed: 42
+deterministic: true
+device: "auto"  # auto, cuda, cpu, mps
+
+# =============================================================================
+# Data Configuration
+# =============================================================================
+data:
+  train_path: "data/splits/train.csv"
+  val_path: "data/splits/val.csv"
+  test_path: "data/splits/test.csv"
+  batch_size: 64
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  min_sequence_length: 2  # Loại bỏ segment 1 điểm
+  fillna_strategy: "median"
+  max_seq_len: null  # null = dynamic padding theo batch
+
+# =============================================================================
+# Models to Benchmark
+# =============================================================================
+models_to_benchmark:
+  - bilstm
+  - gru
+  - bigru
+  - cnn_bilstm
+  - cnn_gru
+  - transformer
+  - tcn
+  - lstm_attention
+  - gru_attention
+
+# =============================================================================
+# Model Parameters (Áp dụng chung cho tất cả model)
+# =============================================================================
+model:
+  name: "bilstm"  # Default, sẽ override khi benchmark
+  input_dim: 4
+  hidden_dim: 128
+  num_layers: 2
+  dropout: 0.3
+  bidirectional: true
+  feature_dim: 21
+  num_classes: 4
+  fusion_type: "gate"  # concat, add, gate
+  fusion_dim: 256
+  
+  # Transformer specific
+  nhead: 8
+  dim_feedforward: 512
+  num_transformer_layers: 3
+  
+  # TCN specific
+  tcn_channels: [64, 128, 256]
+  kernel_size: 3
+  
+  # CNN specific
+  cnn_channels: [64, 128]
+  cnn_kernel_size: 3
+
+# =============================================================================
+# Training Parameters
+# =============================================================================
+training:
+  epochs: 30
+  learning_rate: 0.0005
+  weight_decay: 1.0e-4
+  optimizer: "adamw"
+  scheduler: "cosine"
+  scheduler_params:
+    T_max: 100
+    eta_min: 1.0e-6
+  loss: "cross_entropy"
+  early_stopping_patience: 20
+  early_stopping_min_delta: 0.001
+  gradient_clip_val: 0.8
+  use_amp: false
+
+# =============================================================================
+# Evaluation
+# =============================================================================
+evaluation:
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - balanced_accuracy
+    - macro_f1
+    - weighted_f1
+
+# =============================================================================
+# Logging
+# =============================================================================
+logging:
+  level: "INFO"
+  save_logs: true
+  log_dir: "outputs/logs"
+  tensorboard: true
+  csv_logger: true
+
+# =============================================================================
+# Checkpoint
+# =============================================================================
+checkpoint:
+  save_best: true
+  save_last: true
+  save_interval: 10
+  metric_to_monitor: "val_loss"
+  mode: "min"
+
+# =============================================================================
+# Output
+# =============================================================================
+output:
+  base_dir: "outputs/benchmark"
+  save_plots: true
+  export_formats:
+    - csv
+    - excel
+    - json
+    - markdown

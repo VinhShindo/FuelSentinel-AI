@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <div class="eyebrow">Data Export</div>
+        <h2>Download Report</h2>
+        <p>Export detailed event history and summary insights into Excel format.</p>
+    </div>
+</div>
+
+<div class="card-panel p-4" style="background: #FFFFFF; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+    <h6 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i> Filter Report Data</h6>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label for="report-car" class="form-label fw-semibold">Vehicle</label>
+            <select class="form-select" id="report-car">
+                <option value="All">All Vehicles</option>
+                {% for car in cars %}
+                <option value="{{ car }}">{{ car }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="report-date-start" class="form-label fw-semibold">Start Date</label>
+            <input type="date" class="form-control" id="report-date-start">
+            <div class="form-text">Leave empty to include all history.</div>
+        </div>
+        <div class="col-md-3">
+            <label for="report-date-end" class="form-label fw-semibold">End Date</label>
+            <input type="date" class="form-control" id="report-date-end">
+            <div class="form-text">Leave empty to include all history.</div>
+        </div>
+        <div class="col-md-3">
+            <label for="report-type" class="form-label fw-semibold">Event Type</label>
+            <select class="form-select" id="report-type">
+                <option value="All">All Events</option>
+                <option value="Driving">Driving</option>
+                <option value="Refuel">Refuel</option>
+                <option value="Theft">Theft</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-primary btn-lg px-5" id="btn-generate-report">
+            <i class="bi bi-download me-2"></i> Export to Excel
+        </button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('btn-generate-report').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Processing...';
+            btn.disabled = true;
+
+            const payload = {
+                car_id: document.getElementById('report-car').value,
+                start_date: document.getElementById('report-date-start').value,
+                end_date: document.getElementById('report-date-end').value,
+                event_type: document.getElementById('report-type').value
+            };
+
+            try {
+                const response = await fetch('/api/download_report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Lỗi không xác định từ server');
+                }
+
+                // Tạo blob và tải xuống file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `FuelSentinel_Report_${new Date().toISOString().slice(0,10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                alert('Có lỗi xảy ra khi tạo báo cáo: ' + err.message);
+                console.error(err);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    });
+</script>
+{% endblock %}

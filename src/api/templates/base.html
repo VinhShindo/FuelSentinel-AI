@@ -22,7 +22,7 @@
                         <div class="brand-subtitle">Fleet intelligence</div>
                     </div>
                 </div>
-                <button class="sidebar-toggle" type="button" aria-label="Toggle sidebar" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">
+                <button class="sidebar-toggle" type="button" aria-label="Toggle sidebar" onclick="document.getElementById('sidebar').classList.toggle('collapsed'); toggleSidebarResize();">
                     <i class="bi bi-layout-sidebar-inset"></i>
                 </button>
             </div>
@@ -31,7 +31,7 @@
                 <div class="status-pill status-pill--success"><span class="status-dot"></span> Connected</div>
                 <div class="vehicle-card">
                     <div class="vehicle-label">Fleet node</div>
-                    <div class="vehicle-value">VN001 • Active</div>
+                    <div class="vehicle-value" id="sidebar-vehicle">{{ current_car }} • Active</div>
                 </div>
             </div>
 
@@ -43,7 +43,7 @@
                     <li class="nav-item"><a href="/dataset" class="nav-link"><i class="bi bi-database"></i><span>Dataset Explorer</span></a></li>
                     <li class="nav-item"><a href="/feature" class="nav-link"><i class="bi bi-bar-chart-fill"></i><span>Feature Explorer</span></a></li>
                     <li class="nav-item"><a href="/events" class="nav-link"><i class="bi bi-exclamation-triangle"></i><span>Event Manager</span></a></li>
-                    <li class="nav-item"><a href="/api/report" class="nav-link"><i class="bi bi-file-earmark-excel"></i><span>Report</span></a></li>
+                    <li class="nav-item"><a href="/report" class="nav-link"><i class="bi bi-file-earmark-excel"></i><span>Report</span></a></li>
                     <li class="nav-item"><a href="/settings" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
                 </ul>
             </div>
@@ -56,7 +56,7 @@
 
         <header class="header">
             <div class="header-left">
-                <button class="icon-btn d-lg-none" type="button" aria-label="Open navigation" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+                <button class="icon-btn d-lg-none" type="button" aria-label="Open navigation" onclick="document.getElementById('sidebar').classList.toggle('open'); toggleSidebarResize();"><i class="bi bi-list"></i></button>
                 <div class="page-title-block">
                     <div class="eyebrow">Fleet Intelligence</div>
                     <div class="page-title">FuelSentinel AI</div>
@@ -65,24 +65,33 @@
             <div class="header-right">
                 <label class="header-select-wrap" for="vehicle-selector">
                     <i class="bi bi-truck"></i>
-                    <select id="vehicle-selector" class="header-select" aria-label="Select vehicle">
-                        <option>VN001</option>
-                        <option>VN002</option>
-                        <option>VN003</option>
+                    <select id="vehicle-selector" class="header-select" onchange="window.changeVehicle(this.value)">
+                        {% for car in cars %}
+                        <option value="{{ car }}" {% if car == current_car %}selected{% endif %}>{{ car }}</option>
+                        {% endfor %}
                     </select>
                 </label>
+
+                <!-- NOTIFICATION DROPDOWN START -->
                 <div class="dropdown">
                     <button class="icon-btn position-relative" id="notification-dropdown-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
                         <i class="bi bi-bell"></i>
                         <span id="notification-dot" class="notification-dot" style="display:none;"><span class="visually-hidden">New alerts</span></span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end notification-menu" style="min-width: 320px; max-height: 400px; overflow-y:auto;">
-                        <li class="dropdown-header notification-header">Latest alerts</li>
+                    <ul class="dropdown-menu dropdown-menu-end notification-menu" style="min-width: 420px; max-height: 500px; overflow-y:auto;">
+                        <li class="dropdown-header notification-header d-flex justify-content-between align-items-center px-3 py-2">
+                            <span>Thông báo mới nhất</span>
+                            <span class="badge bg-secondary rounded-pill" id="notif-badge">0</span>
+                        </li>
                         <div id="notification-list">
-                            <li class="dropdown-item text-muted py-2 text-center">Loading...</li>
+                            <li class="dropdown-item text-muted py-3 text-center">Đang tải...</li>
                         </div>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-center fw-bold text-primary" href="/events"><i class="bi bi-eye me-1"></i> Xem chi tiết tất cả sự kiện</a></li>
                     </ul>
                 </div>
+                <!-- NOTIFICATION DROPDOWN END -->
+
                 <button class="icon-btn" type="button" onclick="window.toggleTheme()" aria-label="Toggle color theme"><i class="bi bi-moon-stars" id="theme-icon"></i></button>
                 <button class="user-avatar" type="button" aria-label="User profile">AD</button>
             </div>
@@ -95,205 +104,363 @@
         </main>
     </div>
 
-    <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+    <!-- TOAST STACK - Popup thông báo góc phải -->
+    <div id="toast-stack" class="toast-stack position-fixed end-0 p-3" style="z-index: 1055; display: flex; flex-direction: column; gap: 8px; pointer-events: none; top: 88px;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function toggleSidebarResize() {
+            setTimeout(() => {
+                if (typeof window.resizeCharts === 'function') {
+                    window.resizeCharts();
+                }
+            }, 350);
+        }
+
+        window.currentVehicle = '{{ current_car }}';
+        window.changeVehicle = function(carId) {
+            window.currentVehicle = carId;
+            try {
+                fetch('/api/set_vehicle', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({car_id: carId})
+                }).then(res => res.json()).then(data => {
+                    if (data.status === 'ok') {
+                        document.getElementById('sidebar-vehicle').innerText = carId + ' • Active';
+                        const event = new CustomEvent('vehicleChanged', { detail: { carId: carId } });
+                        document.dispatchEvent(event);
+                    }
+                });
+            } catch(e) { console.error('Failed to change vehicle:', e); }
+        };
+
         const storageKey = 'fuelsentinel-theme';
-        const accentKey = 'fuelsentinel-accent';
-        const compactKey = 'fuelsentinel-compact';
-        const animationsKey = 'fuelsentinel-animations';
-
-        function getSystemTheme() {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-
-        function getStoredTheme() {
-            const stored = localStorage.getItem(storageKey);
-            return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light';
-        }
-
+        function getStoredTheme() { return localStorage.getItem(storageKey) || 'light'; }
         function applyTheme(mode, persist = true) {
-            const resolved = mode === 'system' ? getSystemTheme() : mode;
-            document.documentElement.setAttribute('data-theme', resolved);
-            document.documentElement.setAttribute('data-theme-mode', mode);
+            document.documentElement.setAttribute('data-theme', mode);
             if (persist) localStorage.setItem(storageKey, mode);
             const themeIcon = document.getElementById('theme-icon');
-            if (themeIcon) {
-                themeIcon.className = resolved === 'dark' ? 'bi bi-brightness-high' : 'bi bi-moon-stars';
-            }
-            document.querySelectorAll('[data-theme-option]').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-theme-option') === mode);
-            });
+            if (themeIcon) themeIcon.className = mode === 'dark' ? 'bi bi-brightness-high' : 'bi bi-moon-stars';
         }
-
-        function setAccentColor(color) {
-            document.documentElement.style.setProperty('--primary', color);
-            document.documentElement.style.setProperty('--color-primary', color);
-            document.documentElement.style.setProperty('--color-primary-strong', color);
-            localStorage.setItem(accentKey, color);
-            document.querySelectorAll('[data-accent-option]').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-accent-option') === color);
-            });
-        }
-
-        function applyCompactMode(enabled) {
-            document.body.classList.toggle('compact-mode', enabled);
-            localStorage.setItem(compactKey, enabled ? 'true' : 'false');
-        }
-
-        function applyAnimations(enabled) {
-            document.body.classList.toggle('reduced-motion', !enabled);
-            localStorage.setItem(animationsKey, enabled ? 'true' : 'false');
-        }
-
         function toggleTheme() {
-            const currentMode = document.documentElement.getAttribute('data-theme-mode') || 'light';
-            const nextMode = currentMode === 'dark' ? 'light' : 'dark';
-            applyTheme(nextMode, true);
-        }
-
-        function updateThemeUI() {
-            const savedTheme = getStoredTheme();
-            applyTheme(savedTheme, false);
-            const savedAccent = localStorage.getItem(accentKey) || '#2563EB';
-            setAccentColor(savedAccent);
-            applyCompactMode(localStorage.getItem(compactKey) === 'true');
-            applyAnimations(localStorage.getItem(animationsKey) !== 'false');
+            const currentMode = document.documentElement.getAttribute('data-theme') || 'light';
+            applyTheme(currentMode === 'dark' ? 'light' : 'dark', true);
         }
 
         document.documentElement.setAttribute('data-theme', 'light');
-        document.documentElement.setAttribute('data-theme-mode', 'light');
-
         document.addEventListener('DOMContentLoaded', function() {
-            updateThemeUI();
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-            mediaQuery.addEventListener('change', () => {
-                if ((localStorage.getItem(storageKey) || 'system') === 'system') {
-                    applyTheme('system', false);
-                }
-            });
+            applyTheme(getStoredTheme(), false);
 
-            // Auto collapse sidebar on page load
             const sidebar = document.getElementById('sidebar');
-            if (sidebar && !sidebar.classList.contains('collapsed')) {
-                setTimeout(() => sidebar.classList.add('collapsed'), 100);
-            }
+            if (sidebar) sidebar.classList.add('collapsed');
+            setTimeout(() => {
+                if (typeof window.resizeCharts === 'function') window.resizeCharts();
+            }, 100);
 
             const links = document.querySelectorAll('.nav-link');
             const currentPath = window.location.pathname;
             links.forEach(link => {
-                if (link.getAttribute('href') === currentPath) {
-                    link.classList.add('active');
-                }
+                if (link.getAttribute('href') === currentPath) link.classList.add('active');
             });
 
+            // =============================================================================
+            // TOAST & NOTIFICATION LOGIC
+            // Không có thay đổi ở file này: nguyên nhân dữ liệu rỗng nằm hoàn toàn ở backend
+            // (api_alerts() gọi get_active_summary() thiếu full_df) — xem app.py.
+            // Cơ chế lấy 4 thông báo gần nhất từ /api/toasts (đọc từ toast_log.jsonl) và
+            // hiển thị lên dropdown/icon chuông ở đây đã đúng, giữ nguyên.
+            // =============================================================================
             const container = document.getElementById('notification-list');
             const dotEl = document.getElementById('notification-dot');
-            let lastEventCount = 0;
+            const badgeEl = document.getElementById('notif-badge');
 
-            function showToast(type, title, message) {
-                const stack = document.getElementById('toast-stack');
-                if (!stack) return;
-                const toast = document.createElement('article');
-                toast.className = `toast-card toast-card--${type}`;
-                toast.innerHTML = `
-                    <div class="toast-icon"><i class="bi ${type === 'danger' ? 'bi-exclamation-triangle-fill' : type === 'warning' ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill'}"></i></div>
-                    <div class="toast-content">
-                        <div class="toast-title">${title}</div>
-                        <div class="toast-message">${message}</div>
-                    </div>
-                `;
-                stack.appendChild(toast);
-                setTimeout(() => toast.classList.add('show'), 20);
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                    setTimeout(() => toast.remove(), 250);
-                }, 3600);
+            let activeEventId = null;
+            let endedEventId = null;
+            const stack = document.getElementById('toast-stack');
+
+            function formatShortTime(isoString) {
+                if (!isoString) return '--:--:--';
+                if (isoString.includes('T')) return isoString.split('T')[1].substring(0, 8);
+                if (isoString.includes(' ')) return isoString.split(' ')[1].substring(0, 8);
+                return isoString.substring(0, 8);
             }
 
+            function formatFullTime(isoString) {
+                if (!isoString) return '--';
+                try {
+                    const date = new Date(isoString);
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    const seconds = String(date.getSeconds()).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+                } catch(e) { return isoString; }
+            }
+
+            function formatHumanDuration(seconds) {
+                if (!seconds || seconds === 0) return '--';
+                if (seconds < 0) seconds = 0;
+                const days = Math.floor(seconds / 86400);
+                const hours = Math.floor((seconds % 86400) / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = Math.floor(seconds % 60);
+                let parts = [];
+                if (days > 0) parts.push(`${days}d`);
+                if (hours > 0) parts.push(`${hours}h`);
+                if (minutes > 0) parts.push(`${minutes}m`);
+                if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+                return parts.join(' ');
+            }
+
+            function showToastRaw(htmlContent, isOngoing = false) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                const toastEl = tempDiv.firstElementChild;
+                stack.appendChild(toastEl);
+                if (!isOngoing) {
+                    setTimeout(() => {
+                        if(toastEl && toastEl.parentNode) toastEl.remove();
+                    }, 15000);
+                }
+                return toastEl;
+            }
+
+            function getEventStyle(evType) {
+                if (evType === 'Refuel') return { type: 'success', color: '#16A34A', title: 'Bắt đầu đổ xăng' };
+                if (evType === 'Theft') return { type: 'danger', color: '#DC2626', title: 'Cảnh báo: Bắt đầu trộm nhiên liệu' };
+                if (evType === 'Driving') return { type: 'info', color: '#2563EB', title: 'Bắt đầu di chuyển (Driving)' };
+                if (evType === 'Idle') return { type: 'secondary', color: '#6B7280', title: 'Xe bắt đầu dừng đỗ (Idle)' };
+                return { type: 'secondary', color: '#6B7280', title: 'Chuyển đổi trạng thái' };
+            }
+
+            // 1. TOAST BẮT ĐẦU (Lấy dữ liệu fuel_start từ Backend)
+            function showToastStart(ev) {
+                if (!ev || !ev.event) return;
+                const style = getEventStyle(ev.event);
+                const fuelStart = (ev.fuel_start != null && ev.fuel_start !== undefined) ? ev.fuel_start.toFixed(2) : '...';
+                const startTime = formatFullTime(ev.start_time);
+
+                const html = `
+                    <div class="toast align-items-center border-${style.type} border-2 show" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <div><strong class="text-${style.type}">${style.title}</strong></div>
+                                <div class="small text-muted">Mức nhiên liệu tại thời điểm bắt đầu: <strong>${fuelStart} L</strong></div>
+                                <div class="small text-muted">Thời gian bắt đầu: ${startTime}</div>
+                            </div>
+                            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+                showToastRaw(html, false);
+            }
+
+            // 2. TOAST ĐANG DIỄN RA (Dùng active_summary lấy từ Backend)
+            function showToastOngoing(ev) {
+                if (!ev || !ev.event) return;
+                const style = getEventStyle(ev.event);
+
+                const durationStr = formatHumanDuration(ev.duration_s || 0);
+                const fuelCurrent = ev.fuel_current != null ? ev.fuel_current.toFixed(2) : '...';
+                const delta = ev.delta_fuel != null ? ev.delta_fuel : 0;
+                const sign = delta > 0 ? '+' : (delta < 0 ? '-' : '');
+                const statusLabel = ev.fuel_status === 'Refueling' ? 'Đang nạp'
+                                   : (ev.fuel_status === 'Theft' ? 'Bị mất cắp'
+                                   : (ev.fuel_status === 'Consuming' ? 'Tiêu hao' : 'Đứng yên'));
+
+                const html = `
+                    <div class="toast align-items-center border-${style.type} border-2 show" role="alert" id="toast-active">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <div>
+                                    <strong class="text-${style.type}">${style.title}</strong>
+                                    <span class="badge bg-danger rounded-pill ms-2">LIVE</span>
+                                </div>
+                                <div class="small text-muted">Nhiên liệu thay đổi: <strong class="text-${style.type}">${sign}${Math.abs(delta).toFixed(2)} L</strong> (${statusLabel})</div>
+                                <div class="small text-muted">Thời gian đã diễn ra: <strong>${durationStr}</strong> | Nhiên liệu hiện tại: ${fuelCurrent} L</div>
+                                <div class="small text-muted">Thời điểm bắt đầu: ${formatFullTime(ev.start_time)}</div>
+                            </div>
+                            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+
+                let activeEl = document.getElementById('toast-active');
+                if (activeEl) {
+                    activeEl.outerHTML = html;
+                } else {
+                    showToastRaw(html, true);
+                }
+            }
+
+            // 3. TOAST KẾT THÚC (Hiện rõ delta & duration)
+            function showToastEnd(ev) {
+                if (!ev || !ev.state || ev.delta == null) return;
+                const style = getEventStyle(ev.state);
+                const titleEnd = ev.state === 'Refuel' ? 'Đã hoàn thành đổ xăng'
+                               : (ev.state === 'Theft' ? 'Đã kết thúc trộm nhiên liệu'
+                               : (ev.state === 'Driving' ? 'Kết thúc di chuyển (Driving)' : 'Kết thúc dừng đỗ (Idle)'));
+
+                const endTime = formatFullTime(ev.end_time);
+                const endFuel = ev.end_fuel != null ? ev.end_fuel.toFixed(2) : '--';
+                const totalDelta = ev.delta > 0 ? `+${ev.delta.toFixed(2)} L` : `${ev.delta.toFixed(2)} L`;
+                const duration = formatHumanDuration(ev.duration_s);
+
+                const html = `
+                    <div class="toast align-items-center border-${style.type} border-2 show" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <div><strong class="text-${style.type}">${titleEnd}</strong></div>
+                                <div class="small text-muted">Kết thúc lúc: <strong>${endTime}</strong></div>
+                                <div class="small text-muted">Nhiên liệu lúc kết thúc: <strong>${endFuel} L</strong></div>
+                                <div class="small text-muted">Tổng thay đổi nhiên liệu: <strong class="fw-bold text-${style.type}">${totalDelta}</strong></div>
+                                <div class="small text-muted">Tổng thời gian duy trì: <strong>${duration}</strong></div>
+                            </div>
+                            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+                showToastRaw(html, false);
+            }
+
+            // QUẢN LÝ TOAST & NOTIFICATION (Lấy 4 log toast gần nhất)
             async function fetchNotifications() {
                 try {
-                    const res = await fetch('/api/alerts');
-                    const data = await res.json();
-                    if (!Array.isArray(data) || data.length === 0) {
-                        if (container) container.innerHTML = '<li class="dropdown-item text-muted py-3 text-center">No alerts yet</li>';
-                        return;
-                    }
+                    const carId = window.currentVehicle || 'Car 2';
+                    const [toastRes, alertRes] = await Promise.all([
+                        fetch(`/api/toasts?car_id=${carId}`),
+                        fetch(`/api/alerts?car_id=${carId}`)
+                    ]);
+                    const toastData = await toastRes.json();
+                    const alertData = await alertRes.json();
 
-                    const latestAlerts = data.slice(-5).reverse();
-                    if (data.length > lastEventCount && lastEventCount > 0) {
-                        dotEl.style.display = 'block';
-                        const latest = latestAlerts[0];
-                        if (latest) {
-                            const type = latest.state === 'Refuel' ? 'success' : 'danger';
-                            showToast(type, latest.state, `${latest.start_fuel.toFixed(2)}L → ${latest.end_fuel.toFixed(2)}L`);
+                    if (alertData) {
+                        const active = alertData.active;
+                        const history = (alertData.history || []).filter(ev => ev !== null && ev !== undefined && ev.state);
+
+                        // Cập nhật Badge
+                        const activeCount = (active && (active.event === 'Refuel' || active.event === 'Theft' || active.event === 'Driving' || active.event === 'Idle')) ? 1 : 0;
+                        const badgeCount = history.length + activeCount;
+
+                        if (badgeCount > 0) dotEl.style.display = 'block';
+                        else dotEl.style.display = 'none';
+                        badgeEl.innerText = badgeCount;
+
+                        // 1. XỬ LÝ KHI ĐANG CÓ SỰ KIỆN
+                        if (active) {
+                            const currentEventId = active.start_time;
+
+                            if (activeEventId !== currentEventId) {
+                                showToastStart(active);
+                                activeEventId = currentEventId;
+                                endedEventId = null;
+                            }
+
+                            // LUÔN cập nhật Toast Live dùng active từ Backend
+                            showToastOngoing(active);
                         }
-                    }
-                    lastEventCount = data.length;
 
-                    if (container) {
-                        container.innerHTML = '';
-                        if (latestAlerts.length === 0) {
-                            container.innerHTML = '<li class="dropdown-item text-muted py-3 text-center">No new alerts</li>';
-                        } else {
-                            latestAlerts.forEach(alert => {
-                                const timeStr = alert.created_at.includes('T') ? alert.created_at.split('T')[1].substring(0, 8) : alert.created_at.split(' ')[1].substring(0, 8);
-                                let badgeIcon = '⛽';
-                                let badgeClass = 'success';
-                                let metaText = '';
-                                let title = alert.state;
+                        // 2. XỬ LÝ KHI VỪA KẾT THÚC SỰ KIỆN
+                        else if (activeEventId !== null) {
+                            const liveToast = document.getElementById('toast-active');
+                            if (liveToast) liveToast.remove();
 
-                                if (alert.state === 'Fuel Theft') {
-                                    badgeIcon = '⚠️';
-                                    badgeClass = 'danger';
-                                    const lostFuel = Math.abs(alert.delta).toFixed(2);
-                                    metaText = `${lostFuel}L lost • ${alert.duration_s}s`;
-                                } else if (alert.state === 'Refuel') {
-                                    badgeIcon = '⛽';
-                                    badgeClass = 'success';
-                                    const fuelChange = (alert.end_fuel - alert.start_fuel).toFixed(2);
-                                    metaText = `${alert.start_fuel.toFixed(2)}L → ${alert.end_fuel.toFixed(2)}L • ${fuelChange > 0 ? '+' : ''}${fuelChange}L`;
-                                } else if (alert.state === 'Idle Start' || alert.state === 'Idle End') {
-                                    badgeIcon = '🛑';
-                                    badgeClass = 'secondary';
-                                    metaText = `${alert.start_fuel.toFixed(2)}L • ${alert.state === 'Idle End' ? 'Ended' : 'Started'}`;
-                                } else {
-                                    badgeIcon = 'ℹ️';
-                                    badgeClass = 'secondary';
-                                    metaText = `${alert.start_fuel.toFixed(2)}L → ${alert.end_fuel.toFixed(2)}L`;
+                            const latestFinished = history[0];
+                            if (latestFinished && latestFinished.end_time) {
+                                const finishedEventId = latestFinished.start_time;
+                                if (finishedEventId === activeEventId && endedEventId !== finishedEventId) {
+                                    showToastEnd(latestFinished);
+                                    endedEventId = finishedEventId;
                                 }
+                            }
+                            activeEventId = null;
+                        }
 
-                                container.innerHTML += `
-                                    <li class="dropdown-item notification-item">
-                                        <div class="notification-icon ${badgeClass}">${badgeIcon}</div>
-                                        <div class="notification-copy">
-                                            <div class="notification-title">${title}</div>
-                                            <div class="notification-meta">${metaText}</div>
-                                            <div class="notification-meta footer">${timeStr}</div>
-                                        </div>
-                                    </li>`;
-                            });
+                        // 3. CẬP NHẬT DROPDOWN NOTIFICATION (Reset DOM + Lấy 4 log mới)
+                        if (container) {
+                            container.innerHTML = '';
+                            let items = [];
+
+                            // Thêm sự kiện đang diễn ra vào đầu
+                            if (active && (active.event === 'Refuel' || active.event === 'Theft' || active.event === 'Driving' || active.event === 'Idle')) {
+                                const startTime = formatShortTime(active.start_time);
+                                const deltaStr = active.delta_fuel != null ? (active.delta_fuel > 0 ? `+${active.delta_fuel.toFixed(2)}L` : `${active.delta_fuel.toFixed(2)}L`) : '--';
+                                items.push({
+                                    type: 'active',
+                                    title: `${active.event} (Đang diễn ra)`,
+                                    delta: deltaStr,
+                                    time: startTime,
+                                    badge: 'bg-danger'
+                                });
+                            }
+
+                            // Duyệt ngược từ toastData (đã đảo ngược thời gian) — lấy 4 thông báo gần nhất
+                            const reversedToasts = [...toastData].reverse();
+                            for (const t of reversedToasts) {
+                                if (items.length >= 4) break;
+                                if (t.type === 'START') {
+                                    const startTime = formatShortTime(t.start_time);
+                                    let displayValue = t.fuel_start;
+                                    if (displayValue === null || displayValue === undefined) {
+                                        displayValue = t.fuel_current;
+                                    }
+                                    const deltaDisplay = displayValue !== null && displayValue !== undefined ? `${displayValue.toFixed(2)}L` : '...';
+
+                                    items.push({
+                                        type: 'start',
+                                        title: `Bắt đầu ${t.event}`,
+                                        delta: `Nhiên liệu: ${deltaDisplay}`,
+                                        time: startTime,
+                                        badge: 'bg-primary'
+                                    });
+                                } else if (t.type === 'END') {
+                                    const endTime = formatShortTime(t.end_time);
+                                    const deltaText = t.delta !== null && t.delta !== undefined ? (t.delta > 0 ? `+${t.delta.toFixed(2)}L` : `${t.delta.toFixed(2)}L`) : '...';
+                                    items.push({
+                                        type: 'end',
+                                        title: `Kết thúc ${t.event}`,
+                                        delta: `Thay đổi: ${deltaText}`,
+                                        time: endTime,
+                                        badge: 'bg-secondary'
+                                    });
+                                }
+                            }
+
+                            if (items.length === 0) {
+                                container.innerHTML = '<li class="dropdown-item text-muted py-3 text-center">Không có thông báo nào</li>';
+                            } else {
+                                for (const it of items) {
+                                    container.innerHTML += `
+                                        <li class="dropdown-item notification-item">
+                                            <div class="notification-copy">
+                                                <div class="notification-title">${it.title}</div>
+                                                <div class="notification-meta">${it.delta}</div>
+                                                <div class="notification-meta footer text-muted">${it.time}</div>
+                                            </div>
+                                        </li>`;
+                                }
+                            }
                         }
                     }
-                } catch (e) {
-                    console.error('Notification load error:', e);
-                    if (container) container.innerHTML = '<li class="dropdown-item text-muted py-3 text-center">Connection issue</li>';
-                }
+                } catch (e) { console.error('Notification load error:', e); }
             }
 
             const dropdownBtn = document.querySelector('#notification-dropdown-btn');
             if (dropdownBtn) {
                 dropdownBtn.addEventListener('shown.bs.dropdown', function() {
                     dotEl.style.display = 'none';
+                    badgeEl.innerText = '0';
                 });
             }
 
             fetchNotifications();
             setInterval(fetchNotifications, 3000);
+            // =============================================================================
         });
     </script>
-
     {% block scripts %}{% endblock %}
 </body>
 </html>

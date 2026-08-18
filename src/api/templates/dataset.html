@@ -13,7 +13,9 @@
 <div class="table-shell">
     <div class="table-toolbar">
         <h6 class="fw-bold m-0"><i class="bi bi-table me-2"></i> Signal dataset</h6>
-        <input type="text" class="table-search" placeholder="Search rows..." aria-label="Search rows">
+        <div>
+            <input type="text" id="search-input" class="table-search" placeholder="Search rows..." aria-label="Search rows">
+        </div>
     </div>
     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
         <table class="table table-custom align-middle" id="dataset-table">
@@ -40,19 +42,13 @@
         <button class="btn-page" id="btn-dataset-next" onclick="changeDatasetPage(1)">Next</button>
     </div>
 </div>
+
 <script>
-    // Format timestamp to HH:MM:SS - DD/MM/YYYY
     function formatTimestamp(isoString) {
         if (!isoString) return '--';
         try {
-            const date = new Date(isoString);
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
+            let cleanStr = isoString.replace('T', ' ').split('.')[0];
+            return cleanStr;
         } catch(e) {
             return isoString;
         }
@@ -60,8 +56,12 @@
     
     document.addEventListener('DOMContentLoaded', function() {
         let allDatasetData = [];
+        let filteredData = [];
         let currentDatasetPage = 1;
         const itemsPerDatasetPage = 15;
+        let currentCarId = window.currentVehicle || 'Car 2';
+
+        const searchInput = document.getElementById('search-input');
 
         function renderDatasetTable() {
             const tbody = document.getElementById('dataset-tbody');
@@ -69,7 +69,15 @@
             
             const start = (currentDatasetPage - 1) * itemsPerDatasetPage;
             const end = start + itemsPerDatasetPage;
-            const pageData = allDatasetData.slice(start, end);
+            const pageData = filteredData.slice(start, end);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">Không có dữ liệu lịch sử cho xe này.</td></tr>`;
+                document.getElementById('dataset-page-info').innerText = 'Page 0 / 0';
+                document.getElementById('btn-dataset-prev').disabled = true;
+                document.getElementById('btn-dataset-next').disabled = true;
+                return;
+            }
 
             pageData.forEach((row, index) => {
                 const raw = row.raw;
@@ -79,7 +87,7 @@
                 tbody.innerHTML += `<tr>
                     <td>${realIndex}</td>
                     <td>${formatTimestamp(raw.Timestamp)}</td>
-                    <td><strong>VN001</strong></td>
+                    <td><strong>${currentCarId}</strong></td>
                     <td>${raw.Fuel.toFixed(2)} L</td>
                     <td>${raw.Speed.toFixed(2)} km/h</td>
                     <td>${processed.RegressionSlope.toFixed(2)}</td>
@@ -90,14 +98,14 @@
                 </tr>`;
             });
 
-            const totalPages = Math.ceil(allDatasetData.length / itemsPerDatasetPage) || 1;
+            const totalPages = Math.ceil(filteredData.length / itemsPerDatasetPage) || 1;
             document.getElementById('dataset-page-info').innerText = `Page ${currentDatasetPage} / ${totalPages}`;
             document.getElementById('btn-dataset-prev').disabled = currentDatasetPage === 1;
             document.getElementById('btn-dataset-next').disabled = currentDatasetPage === totalPages;
         }
 
         window.changeDatasetPage = function(delta) {
-            const totalPages = Math.ceil(allDatasetData.length / itemsPerDatasetPage) || 1;
+            const totalPages = Math.ceil(filteredData.length / itemsPerDatasetPage) || 1;
             const newPage = currentDatasetPage + delta;
             if (newPage >= 1 && newPage <= totalPages) {
                 currentDatasetPage = newPage;
@@ -105,20 +113,53 @@
             }
         };
 
-        async function fetchDatasetData() {
+        async function loadDataset(carId) {
+            if (!carId) return; // Chặn lỗi undefined
+            currentCarId = carId;
             try {
-                const res = await fetch('/api/history');
+                const res = await fetch(`/api/history?car_id=${carId}`);
                 const data = await res.json();
-                // SỬA LỖI: Đảo ngược mảng để dữ liệu mới nhất hiển thị ở trên cùng
-                allDatasetData = data.reverse(); 
-                const totalPages = Math.ceil(allDatasetData.length / itemsPerDatasetPage) || 1;
-                if (currentDatasetPage > totalPages) currentDatasetPage = totalPages;
-                renderDatasetTable();
-            } catch(e) { console.error("Lỗi fetch dataset:", e); }
+                
+                allDatasetData = Array.isArray(data) ? data.reverse() : [];
+                currentDatasetPage = 1;
+                applySearch();
+            } catch(e) { 
+                console.error("Lỗi fetch dataset:", e); 
+                allDatasetData = [];
+                applySearch();
+            }
         }
 
-        fetchDatasetData();
-        setInterval(fetchDatasetData, 3000);
+        function applySearch() {
+            const keyword = searchInput.value.toLowerCase().trim();
+            if (!keyword) {
+                filteredData = allDatasetData.slice();
+            } else {
+                filteredData = allDatasetData.filter(row => {
+                    const ts = formatTimestamp(row.raw.Timestamp).toLowerCase();
+                    const fuel = row.raw.Fuel.toFixed(2);
+                    const speed = row.raw.Speed.toFixed(2);
+                    const pred = (row.processed.Prediction || '').toLowerCase();
+                    return ts.includes(keyword) || fuel.includes(keyword) || speed.includes(keyword) || pred.includes(keyword);
+                });
+            }
+            renderDatasetTable();
+        }
+
+        document.addEventListener('vehicleChanged', function(e) {
+            loadDataset(e.detail.carId);
+        });
+
+        searchInput.addEventListener('input', () => {
+            currentDatasetPage = 1;
+            applySearch();
+        });
+
+        loadDataset(currentCarId);
+        // SỬA LỖI: Thêm check carId trước khi gọi interval
+        setInterval(() => {
+            if (currentCarId) loadDataset(currentCarId);
+        }, 3000);
     });
 </script>
 {% endblock %}

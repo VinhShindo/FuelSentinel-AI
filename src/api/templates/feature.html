@@ -101,8 +101,8 @@
         </div>
     </div>
 </div>
+
 <script>
-    // Format timestamp to HH:MM:SS - DD/MM/YYYY
     function formatTimestamp(isoString) {
         if (!isoString) return '--';
         try {
@@ -123,6 +123,7 @@
         let allFeatureData = [];
         let currentFeaturePage = 1;
         const itemsPerFeaturePage = 10;
+        let currentCarId = window.currentVehicle || 'Car 2';
 
         function renderFeatureTable() {
             const tbody = document.getElementById('feature-tbody');
@@ -239,11 +240,11 @@
             `;
         }
 
-        async function fetchFeatureData() {
+        async function fetchFeatureData(carId) {
+            if (!carId) return; // Chặn lỗi undefined
             try {
-                const res = await fetch('/api/history');
+                const res = await fetch(`/api/history?car_id=${carId}`);
                 const data = await res.json();
-                // SỬA LỖI: Đảo ngược mảng để dữ liệu mới nhất hiển thị ở trên cùng
                 allFeatureData = data.reverse();
                 const totalPages = Math.ceil(allFeatureData.length / itemsPerFeaturePage) || 1;
                 if (currentFeaturePage > totalPages) currentFeaturePage = totalPages;
@@ -251,8 +252,16 @@
             } catch(e) { console.error("Lỗi fetch feature:", e); }
         }
 
-        fetchFeatureData();
-        setInterval(fetchFeatureData, 3000);
+        document.addEventListener('vehicleChanged', function(e) {
+            currentCarId = e.detail.carId;
+            fetchFeatureData(currentCarId);
+        });
+
+        fetchFeatureData(currentCarId);
+        // SỬA LỖI: Thêm check carId trước khi gọi interval
+        setInterval(() => {
+            if (currentCarId) fetchFeatureData(currentCarId);
+        }, 3000);
     });
 </script>
 {% endblock %}

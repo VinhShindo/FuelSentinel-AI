@@ -1,0 +1,103 @@
+{
+  "project": "FuelSentinel-AI",
+  "seed": 42,
+  "deterministic": true,
+  "device": "auto",
+  "data": {
+    "train_path": "data/splits/train.csv",
+    "val_path": "data/splits/val.csv",
+    "test_path": "data/splits/test.csv",
+    "batch_size": 64,
+    "num_workers": 4,
+    "pin_memory": true,
+    "prefetch_factor": 2,
+    "min_sequence_length": 2,
+    "fillna_strategy": "median",
+    "max_seq_len": null
+  },
+  "model": {
+    "name": "cnn_gru",
+    "hidden_dim": 128,
+    "num_layers": 2,
+    "dropout": 0.3,
+    "bidirectional": true,
+    "feature_dim": 21,
+    "num_classes": 4,
+    "nhead": 8,
+    "dim_feedforward": 512,
+    "num_transformer_layers": 3,
+    "tcn_channels": [
+      64,
+      128,
+      256
+    ],
+    "kernel_size": 3,
+    "cnn_channels": [
+      64,
+      128
+    ],
+    "cnn_kernel_size": 3,
+    "fusion_type": "concat",
+    "fusion_dim": 256,
+    "input_dim": 4
+  },
+  "training": {
+    "epochs": 100,
+    "learning_rate": 0.0005,
+    "weight_decay": 0.0001,
+    "optimizer": "adamw",
+    "scheduler": "cosine",
+    "scheduler_params": {
+      "T_max": 100,
+      "eta_min": 1e-06
+    },
+    "loss": "cross_entropy",
+    "early_stopping_patience": 20,
+    "early_stopping_min_delta": 0.001,
+    "gradient_clip_val": 0.5,
+    "use_amp": false,
+    "val_check_interval": 1.0,
+    "use_class_weights": true
+  },
+  "evaluation": {
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1",
+      "balanced_accuracy",
+      "macro_f1",
+      "weighted_f1"
+    ],
+    "save_confusion_matrix": true,
+    "save_roc_curve": true,
+    "save_pr_curve": true
+  },
+  "logging": {
+    "level": "INFO",
+    "save_logs": true,
+    "log_dir": "outputs/logs",
+    "tensorboard": true,
+    "csv_logger": true
+  },
+  "checkpoint": {
+    "save_best": true,
+    "save_last": true,
+    "save_interval": 10,
+    "metric_to_monitor": "val_loss",
+    "mode": "min"
+  },
+  "output": {
+    "base_dir": "outputs/final_model",
+    "save_plots": true,
+    "export_formats": [
+      "json",
+      "markdown"
+    ]
+  },
+  "phase": "final_train",
+  "export": {
+    "onnx": true,
+    "torchscript": false
+  }
+}

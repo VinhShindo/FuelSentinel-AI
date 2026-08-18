@@ -1,0 +1,88 @@
+checkpoint:
+  metric_to_monitor: val_loss
+  mode: min
+  save_best: true
+  save_interval: 10
+  save_last: true
+data:
+  batch_size: 64
+  fillna_strategy: median
+  max_seq_len: null
+  min_sequence_length: 2
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  test_path: data/splits/test.csv
+  train_path: data/splits/train.csv
+  val_path: data/splits/val.csv
+deterministic: true
+device: auto
+evaluation:
+  metrics:
+  - accuracy
+  - precision
+  - recall
+  - f1
+  - balanced_accuracy
+  - macro_f1
+  - weighted_f1
+  save_confusion_matrix: true
+  save_pr_curve: true
+  save_roc_curve: true
+export:
+  onnx: true
+  torchscript: false
+logging:
+  csv_logger: true
+  level: INFO
+  log_dir: outputs/logs
+  save_logs: true
+  tensorboard: true
+model:
+  bidirectional: true
+  cnn_channels:
+  - 64
+  - 128
+  cnn_kernel_size: 3
+  dim_feedforward: 512
+  dropout: 0.3
+  feature_dim: 21
+  fusion_dim: 256
+  fusion_type: concat
+  hidden_dim: 128
+  input_dim: 4
+  kernel_size: 3
+  name: cnn_gru
+  nhead: 8
+  num_classes: 4
+  num_layers: 2
+  num_transformer_layers: 3
+  tcn_channels:
+  - 64
+  - 128
+  - 256
+output:
+  base_dir: outputs/final_model
+  export_formats:
+  - json
+  - markdown
+  save_plots: true
+phase: final_train
+project: FuelSentinel-AI
+seed: 42
+training:
+  early_stopping_min_delta: 0.001
+  early_stopping_patience: 20
+  epochs: 100
+  gradient_clip_val: 0.5
+  learning_rate: 0.0005
+  loss: cross_entropy
+  optimizer: adamw
+  scheduler: cosine
+  scheduler_params:
+    T_max: 100
+    eta_min: 1.0e-06
+  use_amp: false
+  use_class_weights: true
+  val_check_interval: 1.0
+  weight_decay: 0.0001

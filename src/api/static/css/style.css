@@ -816,6 +816,53 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .notification-meta { font-size: 0.82rem; color: var(--color-text-secondary); }
 .notification-meta.footer { font-size: 0.75rem; }
 
+/* =========================================================
+   [FIX NOTIFICATION]: Force White Background & Remove Icons
+   ========================================================= */
+.dropdown-menu.notification-menu {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+.dropdown-menu.notification-menu .dropdown-item {
+    color: #111827 !important;
+    background: #ffffff !important;
+}
+.dropdown-menu.notification-menu .dropdown-item:hover {
+    background-color: #f3f4f6 !important;
+    color: #111827 !important;
+}
+
+.dropdown-menu.notification-menu .dropdown-header,
+.dropdown-menu.notification-menu .notification-meta,
+.dropdown-menu.notification-menu .notification-title {
+    color: #111827 !important;
+}
+.dropdown-menu.notification-menu .notification-meta.footer {
+    color: #6b7280 !important;
+}
+
+.dropdown-menu.notification-menu hr.dropdown-divider {
+    border-top: 1px solid #e5e7eb !important;
+}
+
+/* Vô hiệu hóa Icon hình vuông */
+.notification-icon {
+    display: none !important;
+}
+
+/* Điều chỉnh padding khi không có icon */
+.notification-item {
+    padding: 10px 16px !important;
+    gap: 0 !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+.notification-copy {
+    width: 100%;
+}
+
 @media (max-width: 1200px) {
     .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
