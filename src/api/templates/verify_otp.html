@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Xác minh OTP - FuelSentinel</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/auth.css') }}"
+    >
+
+</head>
+
+<body>
+
+<div class="auth-container">
+
+    <div class="auth-box">
+
+        <div class="form-badge">
+            VERIFICATION
+        </div>
+
+        <h1>Xác minh OTP</h1>
+
+        <p>
+            Nhập mã 6 chữ số đã được gửi
+            đến email của bạn.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+
+            <div class="form-group">
+
+                <label for="otp">
+                    Mã OTP
+                </label>
+
+                <input
+                    type="text"
+                    id="otp"
+                    name="otp"
+                    maxlength="6"
+                    minlength="6"
+                    inputmode="numeric"
+                    placeholder="000000"
+                    required
+                >
+
+            </div>
+
+            <button
+                type="submit"
+                class="login-btn"
+            >
+                Xác minh OTP
+            </button>
+
+        </form>
+
+        <div class="auth-footer">
+
+            <a href="{{ url_for('forgot_password') }}">
+                Gửi lại mã OTP
+            </a>
+
+            <br><br>
+
+            <a href="{{ url_for('login') }}">
+                ← Quay lại đăng nhập
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

@@ -217,5 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-
+src/api/app_v1.py
 /data/
+src/api/supabase_seed_vehicle_accounts.sql

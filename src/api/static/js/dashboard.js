@@ -3,7 +3,7 @@ import { customTooltipFormatter } from './tooltip.js';
 
 const API_BASE = window.location.origin;
 let fuelChart, lifecycleChart;
-let currentVehicle = 'Car 2';
+let currentVehicle = window.currentVehicle || 'Car 2';
 
 const DEFAULT_VISIBLE_POINTS = 20;
 const MAX_POINTS = 500;
@@ -271,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fuelChart.setOption(option, true);
 
         const last = chartPoints[chartPoints.length - 1];
-        document.getElementById('kpi-vehicle').innerText = currentVehicle;
         document.getElementById('kpi-fuel').innerText = last.fuel?.toFixed(2) ?? '--';
         document.getElementById('kpi-speed').innerText = last.speed?.toFixed(2) ?? '--';
     }

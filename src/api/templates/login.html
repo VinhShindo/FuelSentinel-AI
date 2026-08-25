@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FuelSentinel AI - Đăng nhập</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/auth.css') }}"
+    >
+</head>
+
+<body>
+
+<div class="register-page">
+
+    <!-- =========================================
+         LEFT - AI VISUALIZATION
+         ========================================= -->
+
+    <section class="visual-section">
+
+        <div class="grid-background"></div>
+
+
+        <!-- BRAND -->
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                FS
+            </div>
+
+            <div>
+
+                <div class="brand-name">
+                    FuelSentinel
+                </div>
+
+                <div class="brand-ai">
+                    AI
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             FUEL CORE
+             ===================================== -->
+
+        <div class="fuel-visual">
+
+            <div class="orbit orbit-1"></div>
+
+            <div class="orbit orbit-2"></div>
+
+            <div class="orbit orbit-3"></div>
+
+
+            <div class="orbit-dot dot-1"></div>
+
+            <div class="orbit-dot dot-2"></div>
+
+            <div class="orbit-dot dot-3"></div>
+
+
+            <!-- CORE -->
+
+            <div class="fuel-core">
+
+                <div class="core-glow"></div>
+
+                <div class="core-inner">
+
+                    <div class="fuel-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                        >
+
+                            <path
+                                d="M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Z"
+                            />
+
+                            <path
+                                d="M9 16c0 2 1.3 3 3 3"
+                            />
+
+                        </svg>
+
+                    </div>
+
+
+                    <div class="core-title">
+                        FUEL
+                    </div>
+
+                    <div class="core-subtitle">
+                        INTELLIGENCE
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- DATA CARD 1 -->
+
+            <div class="data-card data-card-1">
+
+                <span class="data-dot"></span>
+
+                <div>
+
+                    <small>
+                        SYSTEM
+                    </small>
+
+                    <strong>
+                        ONLINE
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- DATA CARD 2 -->
+
+            <div class="data-card data-card-2">
+
+                <span class="data-icon">
+                    ◈
+                </span>
+
+                <div>
+
+                    <small>
+                        AI ANALYSIS
+                    </small>
+
+                    <strong>
+                        READY
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- DATA CARD 3 -->
+
+            <div class="data-card data-card-3">
+
+                <span class="data-icon">
+                    ↗
+                </span>
+
+                <div>
+
+                    <small>
+                        MONITORING
+                    </small>
+
+                    <strong>
+                        24 / 7
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             TEXT
+             ===================================== -->
+
+        <div class="visual-content">
+
+            <div class="eyebrow">
+                WELCOME BACK
+            </div>
+
+
+            <h1>
+
+                Your fuel.<br>
+
+                <span>Under control.</span>
+
+            </h1>
+
+
+            <p>
+
+                Đăng nhập để tiếp tục theo dõi,
+                phân tích và phát hiện những bất thường
+                trong hệ thống nhiên liệu của bạn.
+
+            </p>
+
+        </div>
+
+
+        <!-- =====================================
+             STATUS
+             ===================================== -->
+
+        <div class="system-status">
+
+            <span class="status-pulse"></span>
+
+            FuelSentinel AI Core
+
+            <span class="status-line"></span>
+
+            SECURE
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =========================================
+         RIGHT - LOGIN FORM
+         ========================================= -->
+
+    <section class="form-section">
+
+        <div class="form-container">
+
+
+            <!-- MOBILE BRAND -->
+
+            <div class="mobile-brand">
+
+                <div class="brand-icon">
+                    FS
+                </div>
+
+                <span>
+                    FuelSentinel <b>AI</b>
+                </span>
+
+            </div>
+
+
+
+            <!-- =====================================
+                 HEADER
+                 ===================================== -->
+
+            <div class="form-header">
+
+                <div class="form-badge">
+                    SECURE ACCESS
+                </div>
+
+
+                <h2>
+                    Chào mừng trở lại
+                </h2>
+
+
+                <p>
+
+                    Đăng nhập vào FuelSentinel AI
+                    để tiếp tục công việc của bạn.
+
+                </p>
+
+            </div>
+
+
+
+            <!-- =====================================
+                 FLASH MESSAGE
+                 ===================================== -->
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+
+                {% if messages %}
+
+                    {% for category, message in messages %}
+
+                        <div class="alert alert-{{ category }}">
+
+                            {{ message }}
+
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+
+
+            <!-- =====================================
+                 LOGIN FORM
+                 ===================================== -->
+
+            <form
+                method="POST"
+                action="{{ url_for('login') }}"
+            >
+
+
+                <!-- EMAIL -->
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <span class="input-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+
+                                <rect
+                                    x="3"
+                                    y="5"
+                                    width="18"
+                                    height="14"
+                                    rx="2"
+                                />
+
+                                <path
+                                    d="m3 7 9 6 9-6"
+                                />
+
+                            </svg>
+
+                        </span>
+
+
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- PASSWORD -->
+
+                <div class="form-group">
+
+                    <label for="login-password">
+                        Mật khẩu
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <span class="input-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+
+                                <rect
+                                    x="5"
+                                    y="10"
+                                    width="14"
+                                    height="10"
+                                    rx="2"
+                                />
+
+                                <path
+                                    d="M8 10V7a4 4 0 0 1 8 0v3"
+                                />
+
+                            </svg>
+
+                        </span>
+
+
+                        <input
+                            id="login-password"
+                            type="password"
+                            name="password"
+                            placeholder="Nhập mật khẩu"
+                            autocomplete="current-password"
+                            required
+                        >
+
+
+                        <button
+                            type="button"
+                            class="show-password"
+                            onclick="toggleLoginPassword()"
+                            aria-label="Hiện/Ẩn mật khẩu"
+                        >
+
+                            <svg
+                                id="login-eye"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+
+                                <path
+                                    d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+                                />
+
+                                <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="3"
+                                />
+
+                            </svg>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================
+                     OPTIONS
+                     ================================= -->
+
+                <div class="login-options">
+
+                    <label class="remember-me">
+
+                        <input
+                            type="checkbox"
+                            name="remember"
+                        >
+
+                        <span class="custom-checkbox"></span>
+
+                        <span>Ghi nhớ đăng nhập</span>
+
+                    </label>
+
+                    <a
+                        href="{{ url_for('forgot_password') }}"
+                        class="forgot-password"
+                    >
+                        <span>Quên mật khẩu?</span>
+                        <span class="forgot-arrow">↗</span>
+                    </a>
+
+                </div>
+
+
+                <!-- =================================
+                     LOGIN BUTTON
+                     ================================= -->
+
+                <button
+                    type="submit"
+                    class="btn-submit"
+                >
+
+                    <span>
+                        Đăng nhập
+                    </span>
+
+                    <span class="button-arrow">
+                        →
+                    </span>
+
+                </button>
+                
+
+            </form>
+
+
+
+            <!-- =====================================
+                 REGISTER
+                 ===================================== -->
+
+            <div class="auth-footer">
+
+                <span>
+                    Chưa có tài khoản?
+                </span>
+
+
+                <a href="{{ url_for('register') }}">
+                    Tạo tài khoản
+                </a>
+
+            </div>
+
+
+
+            <!-- =====================================
+                 SECURITY
+                 ===================================== -->
+
+            <div class="security-note">
+
+                <span>⌁</span>
+
+                Kết nối được bảo mật bởi FuelSentinel AI
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+
+<!-- =========================================
+     JAVASCRIPT
+     ========================================= -->
+
+<script>
+
+function toggleLoginPassword() {
+
+    const password =
+        document.getElementById(
+            "login-password"
+        );
+
+    const eye =
+        document.getElementById(
+            "login-eye"
+        );
+
+
+    if (password.type === "password") {
+
+        password.type = "text";
+
+
+        eye.innerHTML = `
+
+            <path
+                d="M2 12s3.5-7 10-7
+                10 7 10 7
+                -3.5 7-10 7
+                S2 12 2 12Z"
+            />
+
+            <circle
+                cx="12"
+                cy="12"
+                r="3"
+            />
+
+        `;
+
+    }
+
+    else {
+
+        password.type = "password";
+
+
+        eye.innerHTML = `
+
+            <path
+                d="M3 3l18 18"
+            />
+
+            <path
+                d="M10.6 5.1
+                A10.8 10.8 0 0 1 12 5
+                c6.5 0 10 7 10 7
+                a18.5 18.5 0 0 1-3.1 4.2"
+            />
+
+            <path
+                d="M6.2 6.2
+                C3.5 8.1 2 12 2 12
+                s3.5 7 10 7
+                c1.7 0 3.1-.4 4.4-1"
+            />
+
+        `;
+
+    }
+
+}
+
+</script>
+
+
+</body>
+</html>

@@ -24,6 +24,7 @@ import sqlite3
 import threading
 import logging
 import traceback
+from functools import wraps
 from datetime import datetime
 from collections import deque
 
@@ -33,6 +34,29 @@ import numpy as np
 import pandas as pd
 import torch
 from flask import Flask, render_template, jsonify, send_file, request
+
+#
+import certifi
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from werkzeug.security import generate_password_hash, check_password_hash
+from supabase import create_client, Client
+from dotenv import load_dotenv
+import os
+
+from datetime import timedelta
+import random
+import smtplib
+import ssl
+from email.message import EmailMessage
+from datetime import datetime, timedelta
+
+load_dotenv()
+
+GMAIL_EMAIL = os.getenv("GMAIL_EMAIL")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.WARNING)
@@ -46,6 +70,11 @@ formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+os.makedirs(
+    'data/logs',
+    exist_ok=True
+)
+
 file_handler = logging.FileHandler('data/logs/realtime.log', encoding='utf-8')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
@@ -54,6 +83,150 @@ logger.addHandler(file_handler)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.getcwd())
 sys.path.insert(0, os.path.join(BASE_DIR, '..'))
+
+app = Flask(__name__,
+            template_folder=os.path.join(BASE_DIR, 'templates'),
+            static_folder=os.path.join(BASE_DIR, 'static'))
+
+app.secret_key = os.getenv(
+    "FLASK_SECRET_KEY",
+    "fuel_sentinel_secret_key"
+)
+
+if not SUPABASE_URL:
+    raise RuntimeError(
+        "Thiếu SUPABASE_URL trong file .env"
+    )
+
+if not SUPABASE_KEY:
+    raise RuntimeError(
+        "Thiếu SUPABASE_KEY trong file .env"
+    )
+
+
+supabase: Client = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if "user" not in session:
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "unauthorized"}), 401
+            flash("Vui lòng đăng nhập trước!", "danger")
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+    return wrapped_view
+
+
+def visible_cars():
+    user = session.get("user", {})
+    if user.get("role") == "admin":
+        return sorted(set(car_data_cache) | set(car_states))
+    car_id = user.get("car_id")
+    return [car_id] if car_id and car_id in car_data_cache else []
+
+
+def authorize_car(car_id):
+    user = session.get("user", {})
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+    if car_id is None and user.get("role") == "admin":
+        return None
+    if car_id == "All" and user.get("role") == "admin":
+        return None
+    if car_id not in car_data_cache and car_id not in car_states:
+        return jsonify({"error": "Car not found"}), 404
+    if user.get("role") != "admin" and user.get("car_id") != car_id:
+        return jsonify({"error": "forbidden"}), 403
+    return None
+
+def send_otp_email(receiver_email, otp):
+
+    print("========================================")
+    print("BAT DAU GUI OTP")
+    print("FROM:", GMAIL_EMAIL)
+    print("TO:", receiver_email)
+    print("========================================")
+
+    message = EmailMessage()
+
+    message["Subject"] = "FuelSentinel - Ma xac minh dat lai mat khau"
+    message["From"] = GMAIL_EMAIL
+    message["To"] = receiver_email
+
+    message.set_content(
+        f"""
+Xin chao,
+
+Ban dang yeu cau dat lai mat khau cho tai khoan FuelSentinel.
+
+Ma OTP cua ban la:
+
+{otp}
+
+Ma OTP co hieu luc trong 5 phut.
+
+Neu ban khong yeu cau dat lai mat khau,
+hay bo qua email nay.
+
+FuelSentinel
+        """
+    )
+
+    context = ssl.create_default_context(
+        cafile=certifi.where()
+    )
+
+    try:
+        print("1. Dang ket noi Gmail SMTP...")
+
+        with smtplib.SMTP(
+            "smtp.gmail.com",
+            587
+        ) as server:
+
+            print("2. Dang STARTTLS...")
+
+            server.starttls(
+                context=context
+            )
+
+            print("3. Dang dang nhap Gmail...")
+
+            server.login(
+                GMAIL_EMAIL,
+                GMAIL_APP_PASSWORD
+            )
+
+            print("4. Dang gui email...")
+
+            server.send_message(
+                message
+            )
+
+            print("5. GUI OTP THANH CONG!")
+            print("========================================")
+
+    except Exception as e:
+
+        print("========================================")
+        print("LOI GUI OTP:")
+        print(type(e).__name__)
+        print(str(e))
+        print("========================================")
+
+        raise
+
+
+
+#
+
+
+
 
 from trainning.models.all_models import CNNGRUClassifier
 from trainning.datasets.dataset_builder import convert_gps_to_relative
@@ -67,10 +240,30 @@ CANDIDATE_THRESH = 0.55
 CONFIRM_THRESH = 0.75
 CONFIRM_COUNT = 2
 FINISH_THRESH = 0.5
-MODEL_PATH = "outputs/final_model/cnn_gru_20260815_075909/final_model.pt"
+
+BASE_DIR = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "../.."
+    )
+)
+
+MODEL_PATH = os.path.join(
+    BASE_DIR,
+    "outputs",
+    "cnn_gru_20260815_075909",
+    "final_model.pt"
+)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LABELS = ['Driving', 'Idle', 'Refuel', 'Theft']
-FUSION_CSV = "data/processed/fusion/fusion_dataset.csv"
+
+FUSION_CSV = os.path.join(
+    BASE_DIR,
+    "data",
+    "processed",
+    "fusion",
+    "fusion_dataset.csv"
+)
 
 CANDIDATE_MISMATCH_TOLERANCE = 1
 
@@ -110,9 +303,7 @@ WINDOW_RANGES = {
 IDLE_STEPS = [2, 4, 6, 8]
 STABILITY_STD_THRESHOLD = 0.10
 
-app = Flask(__name__,
-            template_folder=os.path.join(BASE_DIR, 'templates'),
-            static_folder=os.path.join(BASE_DIR, 'static'))
+
 
 def make_json_safe(obj):
     if isinstance(obj, (np.integer,)):
@@ -1095,59 +1286,816 @@ def _ingest_and_predict_one(point, car_id):
         })
 
 @app.route('/')
-def index():
-    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
-    return render_template('dashboard.html', cars=cars, current_car=current_car)
+def home():
+
+    if "user" in session:
+        return redirect(url_for("dashboard"))
+
+    return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        remember = request.form.get("remember") == "on"
+
+        if not email or not password:
+
+            flash(
+                "Vui lòng nhập email và mật khẩu!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("login")
+            )
+
+        try:
+
+
+            result = (
+                supabase
+                .table("accounts")
+                .select("id, email, password")
+                .eq("email", email)
+                .limit(1)
+                .execute()
+            )
+
+            if not result.data:
+
+                flash(
+                    "Email hoặc mật khẩu không chính xác!",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("login")
+                )
+
+            account = result.data[0]
+
+
+            if not check_password_hash(
+                account["password"],
+                password
+            ):
+
+                flash(
+                    "Email hoặc mật khẩu không chính xác!",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("login")
+                )
+
+
+            user_info_result = (
+                supabase
+                .table("user_info")
+                .select("full_name, role, car_id")
+                .eq(
+                    "account_id",
+                    account["id"]
+                )
+                .limit(1)
+                .execute()
+            )
+
+            full_name = ""
+            role = "viewer"
+            car_id = None
+
+            if user_info_result.data:
+
+                full_name = (
+                    user_info_result
+                    .data[0]
+                    .get("full_name", "")
+                )
+                role = user_info_result.data[0].get("role") or "viewer"
+                car_id = user_info_result.data[0].get("car_id")
+
+
+            session.clear()
+
+            session["user"] = {
+                "id": account["id"],
+                "email": account["email"],
+                "full_name": full_name,
+                "role": role,
+                "car_id": car_id
+            }
+
+
+            if remember:
+
+                session.permanent = True
+
+                print(
+                    f"REMEMBER LOGIN: {email} - 30 days"
+                )
+
+            else:
+
+                session.permanent = False
+
+                print(
+                    f"SESSION LOGIN: {email}"
+                )
+
+
+            flash(
+                "Đăng nhập thành công!",
+                "success"
+            )
+
+            return redirect(
+                url_for("dashboard")
+            )
+
+        except Exception as e:
+
+            print("=" * 60)
+            print("LOGIN ERROR:")
+            print(repr(e))
+            print("=" * 60)
+
+            flash(
+                "Có lỗi xảy ra khi đăng nhập!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("login")
+            )
+
+    return render_template("login.html")
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    return render_template(
+        "dashboard.html",
+        user=session["user"],
+        cars=visible_cars(),
+        current_car=session["user"].get("car_id") or globals()["current_car"]
+    )
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        full_name = request.form.get(
+            "full_name",
+            ""
+        ).strip()
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        )
+
+
+        if not full_name:
+
+            flash(
+                "Vui lòng nhập họ và tên!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("register")
+            )
+
+        if not email:
+
+            flash(
+                "Vui lòng nhập email!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("register")
+            )
+
+        if len(password) < 6:
+
+            flash(
+                "Mật khẩu phải có ít nhất 6 ký tự!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("register")
+            )
+
+        if password != confirm_password:
+
+            flash(
+                "Mật khẩu xác nhận không khớp!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("register")
+            )
+
+        try:
+
+
+            existing = (
+                supabase
+                .table("accounts")
+                .select("id")
+                .eq("email", email)
+                .limit(1)
+                .execute()
+            )
+
+            if existing.data:
+
+                flash(
+                    "Email này đã được đăng ký!",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("register")
+                )
+
+
+            password_hash = generate_password_hash(
+                password
+            )
+
+
+            account_result = (
+                supabase
+                .table("accounts")
+                .insert({
+                    "email": email,
+                    "password": password_hash
+                })
+                .execute()
+            )
+
+            if not account_result.data:
+
+                flash(
+                    "Không thể tạo tài khoản!",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("register")
+                )
+
+            account_id = (
+                account_result
+                .data[0]
+                ["id"]
+            )
+
+
+            info_result = (
+                supabase
+                .table("user_info")
+                .insert({
+                    "account_id": account_id,
+                    "full_name": full_name
+                })
+                .execute()
+            )
+
+
+            if not info_result.data:
+
+                print(
+                    "USER_INFO INSERT FAILED"
+                )
+
+                try:
+
+                    (
+                        supabase
+                        .table("accounts")
+                        .delete()
+                        .eq(
+                            "id",
+                            account_id
+                        )
+                        .execute()
+                    )
+
+                except Exception as delete_error:
+
+                    print(
+                        "ROLLBACK ERROR:",
+                        repr(delete_error)
+                    )
+
+                flash(
+                    "Không thể lưu thông tin người dùng!",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("register")
+                )
+
+
+            print(
+                "REGISTER SUCCESS:",
+                email
+            )
+
+            flash(
+                "Đăng ký tài khoản thành công! "
+                "Mời bạn đăng nhập.",
+                "success"
+            )
+
+            return redirect(
+                url_for("login")
+            )
+
+        except Exception as e:
+
+            print("=" * 60)
+            print("REGISTER ERROR:")
+            print(repr(e))
+            print("=" * 60)
+
+            flash(
+                f"Lỗi đăng ký: {str(e)}",
+                "danger"
+            )
+
+            return redirect(
+                url_for("register")
+            )
+
+    return render_template("register.html")
+
+@app.route(
+    "/forgot-password",
+    methods=["GET", "POST"]
+)
+def forgot_password():
+
+    if request.method == "POST":
+
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
+
+        if not email:
+
+            flash(
+                "Vui lòng nhập email!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("forgot_password")
+            )
+
+        try:
+
+
+            result = (
+                supabase
+                .table("accounts")
+                .select("id, email")
+                .eq("email", email)
+                .limit(1)
+                .execute()
+            )
+
+            if not result.data:
+
+                flash(
+                    "Email không tồn tại trong hệ thống!",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("forgot_password")
+                )
+
+
+            otp = str(
+                random.randint(
+                    100000,
+                    999999
+                )
+            )
+
+
+            session["reset_email"] = email
+            session["reset_otp"] = otp
+            session["reset_otp_expire"] = (
+                datetime.now() + timedelta(minutes=5)
+            ).timestamp()
+
+            session["otp_verified"] = False
+
+
+            send_otp_email(
+                email,
+                otp
+            )
+
+            print(
+                "OTP SENT TO:",
+                email
+            )
+
+            flash(
+                "Mã OTP đã được gửi đến email của bạn!",
+                "success"
+            )
+
+            return redirect(
+                url_for("verify_otp")
+            )
+
+        except Exception as e:
+
+            print("=" * 60)
+            print("FORGOT PASSWORD ERROR:")
+            print(repr(e))
+            print("=" * 60)
+
+            flash(
+                "Không thể gửi mã OTP. "
+                "Vui lòng thử lại!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("forgot_password")
+            )
+
+    return render_template(
+        "forgot_password.html"
+    )
+
+
+@app.route(
+    "/verify-otp",
+    methods=["GET", "POST"]
+)
+def verify_otp():
+
+    if "reset_email" not in session:
+
+        flash(
+            "Phiên đặt lại mật khẩu không hợp lệ!",
+            "danger"
+        )
+
+        return redirect(
+            url_for("forgot_password")
+        )
+
+    if request.method == "POST":
+
+        otp_input = request.form.get(
+            "otp",
+            ""
+        ).strip()
+
+        saved_otp = session.get(
+            "reset_otp"
+        )
+
+        expire_time = session.get(
+            "reset_otp_expire"
+        )
+
+
+        if not saved_otp or not expire_time:
+
+            flash(
+                "Mã OTP không hợp lệ!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("forgot_password")
+            )
+
+
+        if datetime.now().timestamp() > expire_time:
+
+            session.pop(
+                "reset_otp",
+                None
+            )
+
+            session.pop(
+                "reset_otp_expire",
+                None
+            )
+
+            flash(
+                "Mã OTP đã hết hạn!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("forgot_password")
+            )
+
+
+        if otp_input != saved_otp:
+
+            flash(
+                "Mã OTP không chính xác!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("verify_otp")
+            )
+
+
+        session["otp_verified"] = True
+
+        session.pop(
+            "reset_otp",
+            None
+        )
+
+        session.pop(
+            "reset_otp_expire",
+            None
+        )
+
+        flash(
+            "Xác minh OTP thành công!",
+            "success"
+        )
+
+        return redirect(
+            url_for("reset_password")
+        )
+
+    return render_template(
+        "verify_otp.html"
+    )
+
+
+@app.route(
+    "/reset-password",
+    methods=["GET", "POST"]
+)
+def reset_password():
+
+    if not session.get(
+        "otp_verified"
+    ):
+
+        flash(
+            "Vui lòng xác minh OTP trước!",
+            "danger"
+        )
+
+        return redirect(
+            url_for("forgot_password")
+        )
+
+    email = session.get(
+        "reset_email"
+    )
+
+    if not email:
+
+        flash(
+            "Phiên đặt lại mật khẩu không hợp lệ!",
+            "danger"
+        )
+
+        return redirect(
+            url_for("forgot_password")
+        )
+
+
+    if request.method == "POST":
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        )
+
+
+        if len(password) < 6:
+
+            flash(
+                "Mật khẩu phải có ít nhất 6 ký tự!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("reset_password")
+            )
+
+        if password != confirm_password:
+
+            flash(
+                "Mật khẩu xác nhận không khớp!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("reset_password")
+            )
+
+        try:
+
+
+            password_hash = generate_password_hash(
+                password
+            )
+
+
+            result = (
+                supabase
+                .table("accounts")
+                .update({
+                    "password": password_hash
+                })
+                .eq(
+                    "email",
+                    email
+                )
+                .execute()
+            )
+
+            if not result.data:
+
+                flash(
+                    "Không thể cập nhật mật khẩu!",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for("reset_password")
+                )
+
+
+            session.pop(
+                "reset_email",
+                None
+            )
+
+            session.pop(
+                "otp_verified",
+                None
+            )
+
+            flash(
+                "Đặt lại mật khẩu thành công! "
+                "Bạn có thể đăng nhập bằng mật khẩu mới.",
+                "success"
+            )
+
+            return redirect(
+                url_for("login")
+            )
+
+        except Exception as e:
+
+            print("=" * 60)
+            print("RESET PASSWORD ERROR:")
+            print(repr(e))
+            print("=" * 60)
+
+            flash(
+                "Có lỗi xảy ra khi đổi mật khẩu!",
+                "danger"
+            )
+
+            return redirect(
+                url_for("reset_password")
+            )
+
+    return render_template(
+        "reset_password.html"
+    )
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    flash(
+        "Bạn đã đăng xuất khỏi FuelSentinel AI.",
+        "success"
+    )
+
+    return redirect(url_for("login"))
+
+#def index():
+#    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
+#    return render_template('dashboard.html', cars=cars, current_car=current_car)
+
+
 
 @app.route('/dataset')
+@login_required
 def dataset():
-    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
-    return render_template('dataset.html', cars=cars, current_car=current_car)
+    cars = visible_cars()
+    return render_template('dataset.html', cars=cars, current_car=cars[0] if len(cars) == 1 else current_car)
 
 @app.route('/feature')
+@login_required
 def feature():
-    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
-    return render_template('feature.html', cars=cars, current_car=current_car)
+    cars = visible_cars()
+    return render_template('feature.html', cars=cars, current_car=cars[0] if len(cars) == 1 else current_car)
 
 @app.route('/realtime')
+@login_required
 def realtime():
-    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
-    return render_template('realtime.html', cars=cars, current_car=current_car)
+    cars = visible_cars()
+    return render_template('realtime.html', cars=cars, current_car=cars[0] if len(cars) == 1 else current_car)
 
 @app.route('/events')
+@login_required
 def events():
-    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
-    return render_template('events.html', cars=cars, current_car=current_car)
+    cars = visible_cars()
+    return render_template('events.html', cars=cars, current_car=cars[0] if len(cars) == 1 else current_car)
 
 @app.route('/report')
+@login_required
 def report():
-    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
-    return render_template('report.html', cars=cars, current_car=current_car)
+    cars = visible_cars()
+    return render_template('report.html', cars=cars, current_car=cars[0] if len(cars) == 1 else current_car)
 
 @app.route('/settings')
+@login_required
 def settings():
-    cars = sorted(set(list(car_data_cache.keys()) + list(car_states.keys())))
-    return render_template('settings.html', cars=cars, current_car=current_car)
+    cars = visible_cars()
+    return render_template('settings.html', cars=cars, current_car=cars[0] if len(cars) == 1 else current_car)
 
 @app.route('/api/set_vehicle', methods=['POST'])
+@login_required
 def set_vehicle():
-    global current_car
     data = request.json or {}
     car_id = data.get('car_id')
     if not car_id: return jsonify({'error': 'Missing car_id'}), 400
-    current_car = car_id
+    error = authorize_car(car_id)
+    if error: return error
+    session['selected_car'] = car_id
     get_car_state(car_id)
-    logger.info(f"🚛 UI chuyển sang xem xe {car_id}")
-    return jsonify({'status': 'ok', 'car_id': current_car})
+    logger.info(f"UI chuyển sang xem xe {car_id}")
+    return jsonify({'status': 'ok', 'car_id': car_id})
 
 @app.route('/api/current_vehicle')
+@login_required
 def current_vehicle():
-    return jsonify({'car_id': current_car})
+    user = session['user']
+    return jsonify({'car_id': session.get('selected_car') if user.get('role') == 'admin' else user.get('car_id')})
 
 @app.route('/api/car_data')
+@login_required
 def api_car_data():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
     limit = int(request.args.get('limit', 500))
+    error = authorize_car(car_id)
+    if error: return error
     if car_id not in car_data_cache: return jsonify({'error': 'Car not found'}), 404
     df = car_data_cache[car_id].tail(limit).copy()
     data = []
@@ -1185,8 +2133,11 @@ def api_predict():
     return jsonify(results if isinstance(payload, list) else results[0])
 
 @app.route('/api/points')
+@login_required
 def api_points():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     limit = int(request.args.get('limit', DEFAULT_VISIBLE_POINTS))
     offset = int(request.args.get('offset', 0))
     limit = max(1, min(limit, MAX_POINTS_HISTORY))
@@ -1214,8 +2165,11 @@ def api_points():
     return jsonify({'car_id': car_id, 'total': total, 'limit': limit, 'offset': offset, 'points': points})
 
 @app.route('/api/history')
+@login_required
 def api_history():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     state = get_car_state(car_id)
     with state.lock:
         history = state.processed_buffer[-100:] if state.processed_buffer else []
@@ -1251,8 +2205,11 @@ def api_history():
     return jsonify(result)
 
 @app.route('/api/realtime')
+@login_required
 def api_realtime():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     state = get_car_state(car_id)
     with state.lock:
         if not state.processed_buffer:
@@ -1286,8 +2243,11 @@ def api_realtime():
     }))
 
 @app.route('/api/events')
+@login_required
 def api_events():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     state = get_car_state(car_id)
     with state.lock:
         evts = list(state.event_history)
@@ -1311,9 +2271,14 @@ def api_events():
     return jsonify(result)
 
 @app.route('/api/event_log')
+@login_required
 def api_event_log():
     limit = int(request.args.get('limit', 1000))
     car_id = request.args.get('car_id')
+    if not car_id:
+        car_id = session['user'].get('car_id')
+    error = authorize_car(car_id)
+    if error: return error
     raw_logs = _read_event_log(limit=limit, car_id=car_id)
 
     result = []
@@ -1347,14 +2312,20 @@ def api_event_log():
 
 # API lấy 4 thông báo toast gần nhất cho icon chuông
 @app.route('/api/toasts')
+@login_required
 def api_toasts():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     toasts = _read_toast_log(limit=4, car_id=car_id)
     return jsonify(toasts)
 
 @app.route('/api/alerts')
+@login_required
 def api_alerts():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     state = get_car_state(car_id)
     logs = _read_event_log(limit=50, car_id=car_id)
     active_event = None
@@ -1391,15 +2362,18 @@ def api_alerts():
     return jsonify(make_json_safe({'history': logs, 'active': active_event}))
 
 @app.route('/api/download_report', methods=['POST'])
+@login_required
 def api_download_report():
     data = request.get_json()
-    car_id = data.get('car_id', 'Car 2')
+    car_id = data.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     start_date = data.get('start_date', None)
     end_date = data.get('end_date', None)
     event_type = data.get('event_type', 'All')
     
     # 1. Lấy dữ liệu sự kiện từ event_log.jsonl
-    raw_logs = _read_event_log(limit=50000, car_id=car_id)
+    raw_logs = _read_event_log(limit=50000, car_id=None if car_id == 'All' else car_id)
     
     # 2. Lọc theo ngày tháng và trạng thái
     filtered_events = []
@@ -1552,31 +2526,114 @@ def api_download_report():
     return send_file(output, download_name=f'FuelSentinel_Report_{car_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx', as_attachment=True)
 
 @app.route('/api/dashboard')
+@login_required
 def api_dashboard():
-    car_id = request.args.get('car_id', current_car)
+
+
+    car_id = request.args.get(
+        "car_id",
+        session["user"].get("car_id") or current_car
+    )
+    error = authorize_car(car_id)
+    if error: return error
+
     state = get_car_state(car_id)
+
     with state.lock:
+
+
         if not state.processed_buffer:
-            return jsonify(make_json_safe({"vehicle": car_id, "fuel": 0, "speed": 0, "status": "Idle", "point_status": "normal", "slope": 0, "r2": 0, "confidence": 0, "stop_duration": 0, "alerts": 0, "last_update": datetime.now().isoformat()}))
+
+            return jsonify(
+                make_json_safe({
+                    "vehicle": car_id,
+                    "fuel": 0,
+                    "speed": 0,
+                    "status": "Idle",
+                    "point_status": "normal",
+                    "slope": 0,
+                    "r2": 0,
+                    "confidence": 0,
+                    "stop_duration": 0,
+                    "alerts": 0,
+                    "last_update": datetime.now().isoformat()
+                })
+            )
+
+
         last = state.processed_buffer[-1]
-        alerts_count = len(state.event_history)
-    return jsonify(make_json_safe({
-        "vehicle": car_id,
-        "fuel": last['Fuel'],
-        "speed": last['Speed'],
-        "status": last['Prediction'],
-        "point_status": last.get('PointStatus', 'normal'),
-        "slope": last['RegressionSlope'],
-        "r2": 0,
-        "confidence": last['Confidence'],
-        "stop_duration": last['StopDuration'],
-        "alerts": alerts_count,
-        "last_update": last['Timestamp'].isoformat() if hasattr(last['Timestamp'], 'isoformat') else str(last['Timestamp'])
-    }))
+
+        alerts_count = len(
+            state.event_history
+        )
+
+    return jsonify(
+        make_json_safe({
+            "vehicle": car_id,
+
+            "fuel": last.get(
+                "Fuel",
+                0
+            ),
+
+            "speed": last.get(
+                "Speed",
+                0
+            ),
+
+            "status": last.get(
+                "Prediction",
+                "Idle"
+            ),
+
+            "point_status": last.get(
+                "PointStatus",
+                "normal"
+            ),
+
+            "slope": last.get(
+                "RegressionSlope",
+                0
+            ),
+
+            "r2": last.get(
+                "R2",
+                0
+            ),
+
+            "confidence": last.get(
+                "Confidence",
+                0
+            ),
+
+            "stop_duration": last.get(
+                "StopDuration",
+                0
+            ),
+
+            "alerts": alerts_count,
+
+            "last_update": (
+                last["Timestamp"].isoformat()
+                if hasattr(
+                    last.get("Timestamp"),
+                    "isoformat"
+                )
+                else str(
+                    last.get("Timestamp", "")
+                )
+            )
+        })
+    )
+
+
 
 @app.route('/api/tracker_status')
+@login_required
 def api_tracker_status():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     state = get_car_state(car_id)
     tracker = state.tracker
     full_df = None
@@ -1615,8 +2672,11 @@ def api_tracker_status():
     return jsonify(make_json_safe(status_info))
 
 @app.route('/api/report')
+@login_required
 def api_report():
-    car_id = request.args.get('car_id', current_car)
+    car_id = request.args.get('car_id', session['user'].get('car_id') or current_car)
+    error = authorize_car(car_id)
+    if error: return error
     state = get_car_state(car_id)
     with state.lock:
         if not state.processed_buffer:
@@ -1634,5 +2694,35 @@ if __name__ == '__main__':
     logger.info(f"   Model: {MODEL_PATH}")
     logger.info(f"   Device: {DEVICE}")
     logger.info(f"   Adaptive Window ranges: {WINDOW_RANGES}")
-    logger.info(f"   Thresholds: candidate={CANDIDATE_THRESH}, confirm={CONFIRM_THRESH}, finish={FINISH_THRESH}, mismatch_tolerance={CANDIDATE_MISMATCH_TOLERANCE}")
-    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)
+    logger.info(
+        f"   Thresholds: "
+        f"candidate={CANDIDATE_THRESH}, "
+        f"confirm={CONFIRM_THRESH}, "
+        f"finish={FINISH_THRESH}, "
+        f"mismatch_tolerance={CANDIDATE_MISMATCH_TOLERANCE}"
+    )
+
+    print("=" * 60)
+    print("FuelSentinel AI")
+    print("=" * 60)
+
+    print(
+        "SUPABASE_URL:",
+        SUPABASE_URL
+    )
+
+    print(
+        "SUPABASE_KEY:",
+        SUPABASE_KEY[:20] + "..."
+        if SUPABASE_KEY
+        else "MISSING"
+    )
+
+    print("=" * 60)
+
+    app.run(
+        debug=False,
+        host="0.0.0.0",
+        port=5000,
+        threaded=True
+    )
