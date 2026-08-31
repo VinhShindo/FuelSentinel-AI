@@ -2,426 +2,266 @@
 <html lang="vi">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>FuelSentinel AI - Dashboard</title>
-
 
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
-
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
     >
-
-
-
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
     >
-
-
-
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='css/style.css') }}"
     >
 
-
-
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-
 
     {% block styles %}{% endblock %}
 
-
-
     <script>
+        (() => {
+            const storageKey = 'fuelsentinel-theme';
+            const savedTheme = localStorage.getItem(storageKey) || 'light';
 
-        (function () {
-
-            const storageKey =
-                'fuelsentinel-theme';
-
-
-            const savedTheme =
-                localStorage.getItem(
-                    storageKey
-                ) || 'light';
-
-
-            document.documentElement.setAttribute(
-                'data-theme',
-                savedTheme
-            );
-
+            document.documentElement.setAttribute('data-theme', savedTheme);
 
             if (savedTheme === 'dark') {
-
-                document.documentElement.classList.add(
-                    'dark-mode'
-                );
-
+                document.documentElement.classList.add('dark-mode');
             }
-
         })();
-
     </script>
-
 </head>
-
 
 <body>
 
-
 <div class="app-shell">
 
-
-
-    <nav
-        class="sidebar"
-        id="sidebar"
-    >
-
-
+    <nav class="sidebar" id="sidebar">
 
         <div class="sidebar-brand">
-
-
-            <div class="brand-text">
-
-
-                <div class="brand-mark">
-
+            <a href="/" class="sidebar-logo">
+                <div class="sidebar-logo-mark">
                     <i class="bi bi-fuel-pump-fill"></i>
-
                 </div>
 
-
-                <div>
-
-                    <div class="brand-title">
-                        FuelSentinel AI
-                    </div>
-
-                    <div class="brand-subtitle">
-                        Fleet intelligence
-                    </div>
-
+                <div class="sidebar-logo-text">
+                    <span class="sidebar-logo-name">
+                        FUEL<span>SENTINEL</span> AI
+                    </span>
                 </div>
-
-
-            </div>
-
-
-            <button
-                class="sidebar-toggle"
-                type="button"
-                aria-label="Toggle sidebar"
-                onclick="
-                    document.getElementById('sidebar').classList.toggle('collapsed');
-                    toggleSidebarResize();
-                "
-            >
-
-                <i class="bi bi-layout-sidebar-inset"></i>
-
-            </button>
-
-
+            </a>
         </div>
 
-
-
-        <div class="sidebar-info">
-
-
-            <div class="status-pill status-pill--success">
-
-                <span class="status-dot"></span>
-
-                Connected
-
-            </div>
-
-
-            <div class="vehicle-card">
-
-
-                <div class="vehicle-label">
-                    Fleet node
-                </div>
-
-
-                <div
-                    class="vehicle-value"
-                    id="sidebar-vehicle"
-                >
-                    {{ current_car }} • Active
-                </div>
-
-
-            </div>
-
-
-        </div>
-
-
-
-        <div class="nav-group">
-
-
-            <div class="nav-group-title">
-                Operations
-            </div>
-
-
+        <div class="sidebar-navigation">
             <ul class="nav-menu">
 
-
                 <li class="nav-item">
-
-                    <a
-                        href="/"
-                        class="nav-link"
-                    >
-
-                        <i class="bi bi-grid-1x2-fill"></i>
-
-                        <span>
-                            Dashboard
+                    <a href="/" class="nav-link" title="Tổng quan">
+                        <span class="nav-icon">
+                            <i class="bi bi-house-door"></i>
                         </span>
-
+                        <span class="nav-label">Tổng quan</span>
                     </a>
-
                 </li>
 
-
                 <li class="nav-item">
-
                     <a
                         href="/realtime"
                         class="nav-link"
+                        title="Giám sát trực tuyến"
                     >
-
-                        <i class="bi bi-broadcast"></i>
-
-                        <span>
-                            Realtime Monitor
+                        <span class="nav-icon">
+                            <i class="bi bi-broadcast"></i>
                         </span>
-
+                        <span class="nav-label">Giám sát trực tuyến</span>
                     </a>
-
                 </li>
 
-
                 <li class="nav-item">
-
                     <a
                         href="/dataset"
                         class="nav-link"
+                        title="Lịch sử hành trình"
                     >
-
-                        <i class="bi bi-database"></i>
-
-                        <span>
-                            Dataset Explorer
+                        <span class="nav-icon">
+                            <i class="bi bi-signpost-split"></i>
                         </span>
-
+                        <span class="nav-label">Lịch sử hành trình</span>
                     </a>
-
                 </li>
 
-
                 <li class="nav-item">
-
-                    <a
-                        href="/feature"
-                        class="nav-link"
-                    >
-
-                        <i class="bi bi-bar-chart-fill"></i>
-
-                        <span>
-                            Feature Explorer
-                        </span>
-
-                    </a>
-
-                </li>
-
-
-                <li class="nav-item">
-
                     <a
                         href="/events"
                         class="nav-link"
+                        title="Sự kiện của tôi"
                     >
-
-                        <i class="bi bi-exclamation-triangle"></i>
-
-                        <span>
-                            Event Manager
+                        <span class="nav-icon">
+                            <i class="bi bi-bell"></i>
                         </span>
-
+                        <span class="nav-label">Sự kiện của tôi</span>
                     </a>
-
                 </li>
 
-
                 <li class="nav-item">
-
                     <a
                         href="/report"
                         class="nav-link"
+                        title="Báo cáo cá nhân"
                     >
-
-                        <i class="bi bi-file-earmark-excel"></i>
-
-                        <span>
-                            Report
+                        <span class="nav-icon">
+                            <i class="bi bi-file-earmark-text"></i>
                         </span>
-
+                        <span class="nav-label">Báo cáo cá nhân</span>
                     </a>
-
                 </li>
 
-
                 <li class="nav-item">
-
                     <a
                         href="/settings"
                         class="nav-link"
+                        title="Cài đặt tài khoản"
                     >
-
-                        <i class="bi bi-gear"></i>
-
-                        <span>
-                            Settings
+                        <span class="nav-icon">
+                            <i class="bi bi-gear"></i>
                         </span>
-
+                        <span class="nav-label">Cài đặt tài khoản</span>
                     </a>
-
                 </li>
 
-
             </ul>
-
-
         </div>
 
+        <div class="sidebar-user-area">
+            <div class="sidebar-user-card">
 
+                <div class="sidebar-user-top">
+                    <div class="sidebar-user-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+
+                    <div class="sidebar-user-info">
+                        <span class="sidebar-user-greeting">Xin chào</span>
+                        <strong class="sidebar-user-name">
+                            {{ session.get('user', {}).get('full_name', 'Người dùng') }}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="sidebar-vehicle-card">
+                    <div class="sidebar-vehicle-icon">
+                        <i class="bi bi-truck"></i>
+                    </div>
+
+                    <div class="sidebar-vehicle-info">
+                        <strong id="sidebar-vehicle">
+                            {{ current_car }}
+                        </strong>
+                        <span>Xe tải</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-change-wrap">
+                    <button
+                        type="button"
+                        class="sidebar-change-btn"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>Đổi xe</span>
+                    </button>
+
+                    <ul class="dropdown-menu sidebar-vehicle-dropdown">
+                        <li class="dropdown-header">
+                            Chọn phương tiện
+                        </li>
+
+                        {% for car in cars %}
+                        <li>
+                            <button
+                                type="button"
+                                class="dropdown-item sidebar-car-option {% if car == current_car %}active{% endif %}"
+                                onclick="window.changeVehicle('{{ car }}')"
+                            >
+                                <i class="bi bi-truck"></i>
+
+                                <span>{{ car }}</span>
+
+                                {% if car == current_car %}
+                                <i class="bi bi-check2 ms-auto"></i>
+                                {% endif %}
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </div>
+        </div>
 
         <div class="sidebar-footer">
-
-
-            <div class="footer-chip">
-                AI monitoring
-            </div>
-
-
-            <div>
-                FuelSentinel v1.0 © 2026
-            </div>
-
-
+            <div class="sidebar-version">FuelSentinel v1.0</div>
+            <div class="sidebar-copyright">© 2026</div>
         </div>
-
 
     </nav>
 
-
     <header class="header">
-
 
         <div class="header-left">
 
-
-
             <button
-                class="icon-btn d-lg-none"
+                class="icon-btn sidebar-menu-btn"
+                id="sidebar-menu-btn"
                 type="button"
-                aria-label="Open navigation"
-                onclick="
-                    document.getElementById('sidebar').classList.toggle('open');
-                    toggleSidebarResize();
-                "
+                aria-label="Mở / đóng menu"
+                aria-controls="sidebar"
+                aria-expanded="false"
+                onclick="toggleSidebar()"
             >
-
                 <i class="bi bi-list"></i>
-
             </button>
 
-
-
             <div class="page-title-block">
-
-
-                <div class="eyebrow">
-                    Fleet Intelligence
-                </div>
-
-
-                <div class="page-title">
-                    FuelSentinel AI
-                </div>
-
-
+                <div class="eyebrow">Fleet Intelligence</div>
+                <div class="page-title">FuelSentinel AI</div>
             </div>
-
 
         </div>
 
-
-
         <div class="header-right">
 
-
-
-            <label
-                class="header-select-wrap"
-                for="vehicle-selector"
-            >
-
+            <label class="header-select-wrap" for="vehicle-selector">
                 <i class="bi bi-truck"></i>
-
 
                 <select
                     id="vehicle-selector"
                     class="header-select"
                     onchange="window.changeVehicle(this.value)"
                 >
-
                     {% for car in cars %}
-
                     <option
                         value="{{ car }}"
                         {% if car == current_car %}selected{% endif %}
                     >
                         {{ car }}
                     </option>
-
                     {% endfor %}
-
                 </select>
-
-
             </label>
 
-
-
             <div class="dropdown">
-
 
                 <button
                     class="icon-btn position-relative"
@@ -431,52 +271,25 @@
                     aria-expanded="false"
                     aria-label="Notifications"
                 >
-
                     <i class="bi bi-bell"></i>
-
 
                     <span
                         id="notification-dot"
                         class="notification-dot"
                         style="display:none;"
                     >
-
-                        <span class="visually-hidden">
-                            New alerts
-                        </span>
-
+                        <span class="visually-hidden">New alerts</span>
                     </span>
-
-
                 </button>
-
 
                 <ul
                     class="dropdown-menu dropdown-menu-end notification-menu"
-                    style="
-                        min-width: 420px;
-                        max-height: 500px;
-                        overflow-y: auto;
-                    "
+                    style="min-width: 420px; max-height: 500px; overflow-y: auto;"
                 >
-
-
                     <li
-                        class="
-                            dropdown-header
-                            notification-header
-                            d-flex
-                            justify-content-between
-                            align-items-center
-                            px-3
-                            py-2
-                        "
+                        class="dropdown-header notification-header d-flex justify-content-between align-items-center px-3 py-2"
                     >
-
-                        <span>
-                            Thông báo mới nhất
-                        </span>
-
+                        <span>Thông báo mới nhất</span>
 
                         <span
                             class="badge bg-secondary rounded-pill"
@@ -484,61 +297,30 @@
                         >
                             0
                         </span>
-
-
                     </li>
-
 
                     <div id="notification-list">
-
-                        <li
-                            class="
-                                dropdown-item
-                                text-muted
-                                py-3
-                                text-center
-                            "
-                        >
+                        <li class="dropdown-item text-muted py-3 text-center">
                             Đang tải...
                         </li>
-
                     </div>
 
-
                     <li>
-
                         <hr class="dropdown-divider">
-
                     </li>
 
-
                     <li>
-
                         <a
-                            class="
-                                dropdown-item
-                                text-center
-                                fw-bold
-                                text-primary
-                            "
+                            class="dropdown-item text-center fw-bold text-primary"
                             href="/events"
                         >
-
                             <i class="bi bi-eye me-1"></i>
-
                             Xem chi tiết tất cả sự kiện
-
                         </a>
-
                     </li>
-
-
                 </ul>
 
-
             </div>
-
-
 
             <button
                 class="icon-btn"
@@ -547,56 +329,93 @@
                 aria-label="Toggle color theme"
                 title="Chuyển chế độ sáng / tối"
             >
-
-                <i
-                    class="bi bi-moon-stars"
-                    id="theme-icon"
-                ></i>
-
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
             </button>
 
+            <div class="dropdown">
 
-            <button
-                class="user-avatar"
-                type="button"
-                aria-label="User profile"
-            >
-                {{ (session.get('user', {}).get('full_name') or session.get('user', {}).get('email', 'US'))[:2]|upper }}
-            </button>
+                <button
+                    class="user-profile-btn dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+                    <span class="user-avatar">
+                        {{ (session.get('user', {}).get('full_name') or session.get('user', {}).get('email', 'US'))[:2]|upper }}
+                    </span>
 
+                    <span class="user-profile-text">
+                        <span class="user-profile-name">
+                            {{ session.get('user', {}).get('full_name', 'Người dùng') }}
+                        </span>
+                    </span>
+                </button>
+
+                <ul class="dropdown-menu dropdown-menu-end">
+
+                    <li class="px-3 py-2">
+                        <div class="fw-bold">
+                            {{ session.get('user', {}).get('full_name', 'Người dùng') }}
+                        </div>
+
+                        <div class="small text-muted">
+                            {{ session.get('user', {}).get('email', '') }}
+                        </div>
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item" href="/settings">
+                            <i class="bi bi-person-circle me-2"></i>
+                            Cài đặt tài khoản
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item" href="/events">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Quản lý sự kiện
+                        </a>
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item" href="/change-password">
+                            <i class="bi bi-key me-2"></i>
+                            Đổi mật khẩu
+                        </a>
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item text-danger" href="/logout">
+                            <i class="bi bi-box-arrow-right me-2"></i>
+                            Log Out
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
 
         </div>
-
-
     </header>
 
-
-
     <main class="main-content">
-
-
         <div class="content-shell">
-
             {% block content %}{% endblock %}
-
         </div>
-
-
     </main>
-
 
 </div>
 
-
-
 <div
     id="toast-stack"
-    class="
-        toast-stack
-        position-fixed
-        end-0
-        p-3
-    "
+    class="toast-stack position-fixed end-0 p-3"
     style="
         z-index: 1055;
         display: flex;
@@ -607,1400 +426,1138 @@
     "
 ></div>
 
-
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-
 <script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const menuButton = document.getElementById('sidebar-menu-btn');
 
+        if (!sidebar) return;
 
+        if (window.innerWidth >= 992) {
+            sidebar.classList.toggle('collapsed');
+        } else {
+            sidebar.classList.toggle('open');
+        }
+
+        if (menuButton) {
+            const isOpen =
+                window.innerWidth >= 992
+                    ? !sidebar.classList.contains('collapsed')
+                    : sidebar.classList.contains('open');
+
+            menuButton.setAttribute(
+                'aria-expanded',
+                isOpen ? 'true' : 'false'
+            );
+        }
+
+        toggleSidebarResize();
+    }
 
     function toggleSidebarResize() {
-
         setTimeout(() => {
-
-            if (
-                typeof window.resizeCharts ===
-                'function'
-            ) {
-
+            if (typeof window.resizeCharts === 'function') {
                 window.resizeCharts();
-
             }
-
         }, 350);
-
     }
 
+    window.currentVehicle = '{{ current_car }}';
+    window.userRole = '{{ user.role if user is defined else "viewer" }}';
 
+    window.changeVehicle = function (carId) {
+        window.currentVehicle = carId;
 
-    window.currentVehicle =
-        '{{ current_car }}';
+        fetch('/api/set_vehicle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                car_id: carId
+            })
+        })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
 
-    window.userRole =
-        '{{ user.role if user is defined else "viewer" }}';
+                return res.json();
+            })
+            .then(data => {
+                if (data && data.status === 'ok') {
+                    const sidebarVehicle =
+                        document.getElementById('sidebar-vehicle');
 
-
-    window.changeVehicle =
-        function (carId) {
-
-
-            window.currentVehicle =
-                carId;
-
-
-            try {
-
-
-                fetch(
-                    '/api/set_vehicle',
-                    {
-
-                        method: 'POST',
-
-                        headers: {
-                            'Content-Type':
-                                'application/json'
-                        },
-
-                        body: JSON.stringify({
-                            car_id: carId
-                        })
-
+                    if (sidebarVehicle) {
+                        sidebarVehicle.innerText = `${carId} • Active`;
                     }
-                )
 
-                .then(
-                    res => {
-
-                        if (!res.ok) {
-
-                            throw new Error(
-                                `HTTP ${res.status}`
-                            );
-
-                        }
-
-                        return res.json();
-
-                    }
-                )
-
-                .then(
-                    data => {
-
-                        if (
-                            data &&
-                            data.status === 'ok'
-                        ) {
-
-
-                            const sidebarVehicle =
-                                document.getElementById(
-                                    'sidebar-vehicle'
-                                );
-
-
-                            if (
-                                sidebarVehicle
-                            ) {
-
-                                sidebarVehicle.innerText =
-                                    carId +
-                                    ' • Active';
-
+                    document.dispatchEvent(
+                        new CustomEvent('vehicleChanged', {
+                            detail: {
+                                carId: carId
                             }
-
-
-                            const event =
-                                new CustomEvent(
-                                    'vehicleChanged',
-                                    {
-                                        detail: {
-                                            carId:
-                                                carId
-                                        }
-                                    }
-                                );
-
-
-                            document.dispatchEvent(
-                                event
-                            );
-
-
-                        }
-
-                    }
-                )
-
-                .catch(
-                    error => {
-
-                        console.error(
-                            'Failed to change vehicle:',
-                            error
-                        );
-
-                    }
-                );
-
-
-            } catch (e) {
-
+                        })
+                    );
+                }
+            })
+            .catch(error => {
                 console.error(
                     'Failed to change vehicle:',
-                    e
+                    error
                 );
+            });
+    };
 
-            }
-
-
-        };
-
-
-
-    const storageKey =
-        'fuelsentinel-theme';
-
+    const storageKey = 'fuelsentinel-theme';
 
     function getStoredTheme() {
-
-        return (
-            localStorage.getItem(
-                storageKey
-            ) || 'light'
-        );
-
+        return localStorage.getItem(storageKey) || 'light';
     }
 
+    function applyTheme(mode, persist = true) {
+        document.documentElement.setAttribute(
+            'data-theme',
+            mode
+        );
 
-    function applyTheme(
-        mode,
-        persist = true
-    ) {
+        document.documentElement.classList.toggle(
+            'dark-mode',
+            mode === 'dark'
+        );
 
-
-
-        document.documentElement
-            .setAttribute(
-                'data-theme',
-                mode
-            );
-
-
-
-        document.documentElement
-            .classList
-            .toggle(
+        if (document.body) {
+            document.body.classList.toggle(
                 'dark-mode',
                 mode === 'dark'
             );
-
-
-
-        if (document.body) {
-
-            document.body
-                .classList
-                .toggle(
-                    'dark-mode',
-                    mode === 'dark'
-                );
-
         }
 
-
-
-        document.documentElement
-            .style
-            .colorScheme =
-                mode === 'dark'
-                    ? 'dark'
-                    : 'light';
-
-
+        document.documentElement.style.colorScheme =
+            mode === 'dark' ? 'dark' : 'light';
 
         if (persist) {
-
-            localStorage.setItem(
-                storageKey,
-                mode
-            );
-
+            localStorage.setItem(storageKey, mode);
         }
 
-
-
         const themeIcon =
-            document.getElementById(
-                'theme-icon'
-            );
-
+            document.getElementById('theme-icon');
 
         if (themeIcon) {
-
             themeIcon.className =
                 mode === 'dark'
                     ? 'bi bi-brightness-high'
                     : 'bi bi-moon-stars';
-
         }
-
-
 
         const themeButton =
             document.querySelector(
                 '[onclick="window.toggleTheme()"]'
             );
 
-
         if (themeButton) {
-
+            const isDark = mode === 'dark';
 
             themeButton.setAttribute(
                 'aria-label',
-                mode === 'dark'
+                isDark
                     ? 'Chuyển sang chế độ sáng'
                     : 'Chuyển sang chế độ tối'
             );
-
 
             themeButton.setAttribute(
                 'title',
-                mode === 'dark'
+                isDark
                     ? 'Chuyển sang chế độ sáng'
                     : 'Chuyển sang chế độ tối'
             );
-
-
         }
 
-
-
-        setTimeout(
-            () => {
-
-                if (
-                    typeof window.resizeCharts ===
-                    'function'
-                ) {
-
-                    window.resizeCharts();
-
-                }
-
-            },
-            50
-        );
-
-
+        setTimeout(() => {
+            if (typeof window.resizeCharts === 'function') {
+                window.resizeCharts();
+            }
+        }, 50);
     }
 
+    window.toggleTheme = function () {
+        const currentMode = document.documentElement.getAttribute('data-theme') || 'light';
+        const nextMode = currentMode === 'dark' ? 'light' : 'dark';
+        applyTheme(nextMode, true);
 
-    window.toggleTheme =
-        function () {
+        // Cập nhật biểu đồ khi chuyển chế độ
+        if (typeof window.updateChartTheme === 'function') {
+            window.updateChartTheme();
+        }
+    };
 
+    //
 
-            const currentMode =
-                document.documentElement
-                    .getAttribute(
-                        'data-theme'
-                    ) || 'light';
+    document.addEventListener('DOMContentLoaded', function () {
 
+        applyTheme(getStoredTheme(), false);
 
-            const nextMode =
-                currentMode === 'dark'
-                    ? 'light'
-                    : 'dark';
+        const sidebar =
+            document.getElementById('sidebar');
 
+        if (sidebar && window.innerWidth >= 992) {
+            sidebar.classList.add('collapsed');
+        }
 
-            applyTheme(
-                nextMode,
-                true
+        setTimeout(() => {
+            if (typeof window.resizeCharts === 'function') {
+                window.resizeCharts();
+            }
+        }, 100);
+
+        const links =
+            document.querySelectorAll('.nav-link');
+
+        const currentPath =
+            window.location.pathname;
+
+        links.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
+        });
+
+        const container =
+            document.getElementById('notification-list');
+
+        const dotEl =
+            document.getElementById('notification-dot');
+
+        const badgeEl =
+            document.getElementById('notif-badge');
+
+        const dropdownBtn =
+            document.querySelector(
+                '#notification-dropdown-btn'
             );
 
+        const stack =
+            document.getElementById('toast-stack');
 
-        };
+        let activeEventId = null;
+        let endedEventId = null;
 
+        function formatShortTime(isoString) {
 
-
-    document.addEventListener(
-        'DOMContentLoaded',
-        function () {
-
-
-
-            applyTheme(
-                getStoredTheme(),
-                false
-            );
-
-
-            const sidebar =
-                document.getElementById(
-                    'sidebar'
-                );
-
-
-            if (sidebar) {
-
-                sidebar.classList.add(
-                    'collapsed'
-                );
-
+            if (!isoString) {
+                return '--:--:--';
             }
 
-
-            setTimeout(
-                () => {
-
-                    if (
-                        typeof window.resizeCharts ===
-                        'function'
-                    ) {
-
-                        window.resizeCharts();
-
-                    }
-
-                },
-                100
-            );
-
-
-
-            const links =
-                document.querySelectorAll(
-                    '.nav-link'
-                );
-
-
-            const currentPath =
-                window.location.pathname;
-
-
-            links.forEach(
-                link => {
-
-                    if (
-                        link.getAttribute('href') ===
-                        currentPath
-                    ) {
-
-                        link.classList.add(
-                            'active'
-                        );
-
-                    }
-
-                }
-            );
-
-
-
-            const container =
-                document.getElementById(
-                    'notification-list'
-                );
-
-
-            const dotEl =
-                document.getElementById(
-                    'notification-dot'
-                );
-
-
-            const badgeEl =
-                document.getElementById(
-                    'notif-badge'
-                );
-
-
-            const dropdownBtn =
-                document.querySelector(
-                    '#notification-dropdown-btn'
-                );
-
-
-            const stack =
-                document.getElementById(
-                    'toast-stack'
-                );
-
-
-
-            let activeEventId =
-                null;
-
-
-            let endedEventId =
-                null;
-
-
-
-            function formatShortTime(
-                isoString
-            ) {
-
-
-                if (!isoString) {
-
-                    return '--:--:--';
-
-                }
-
-
-                if (
-                    isoString.includes('T')
-                ) {
-
-                    return isoString
-                        .split('T')[1]
-                        .substring(0, 8);
-
-                }
-
-
-                if (
-                    isoString.includes(' ')
-                ) {
-
-                    return isoString
-                        .split(' ')[1]
-                        .substring(0, 8);
-
-                }
-
-
+            if (isoString.includes('T')) {
                 return isoString
-                    .substring(
-                        0,
-                        8
-                    );
-
-
+                    .split('T')[1]
+                    .substring(0, 8);
             }
 
+            if (isoString.includes(' ')) {
+                return isoString
+                    .split(' ')[1]
+                    .substring(0, 8);
+            }
 
-            function formatFullTime(
-                isoString
-            ) {
+            return isoString.substring(0, 8);
+        }
 
+        function formatFullTime(isoString) {
 
-                if (!isoString) {
+            if (!isoString) {
+                return '--';
+            }
 
-                    return '--';
+            try {
 
-                }
+                const date =
+                    new Date(isoString);
 
-
-                try {
-
-
-                    const date =
-                        new Date(
-                            isoString
-                        );
-
-
-                    if (
-                        isNaN(
-                            date.getTime()
-                        )
-                    ) {
-
-                        return isoString;
-
-                    }
-
-
-                    const hours =
-                        String(
-                            date.getHours()
-                        )
-                        .padStart(
-                            2,
-                            '0'
-                        );
-
-
-                    const minutes =
-                        String(
-                            date.getMinutes()
-                        )
-                        .padStart(
-                            2,
-                            '0'
-                        );
-
-
-                    const seconds =
-                        String(
-                            date.getSeconds()
-                        )
-                        .padStart(
-                            2,
-                            '0'
-                        );
-
-
-                    const day =
-                        String(
-                            date.getDate()
-                        )
-                        .padStart(
-                            2,
-                            '0'
-                        );
-
-
-                    const month =
-                        String(
-                            date.getMonth() + 1
-                        )
-                        .padStart(
-                            2,
-                            '0'
-                        );
-
-
-                    const year =
-                        date.getFullYear();
-
-
-                    return (
-                        `${hours}:${minutes}:${seconds}`
-                        + ` - `
-                        + `${day}/${month}/${year}`
-                    );
-
-
-                } catch (e) {
-
+                if (isNaN(date.getTime())) {
                     return isoString;
-
                 }
-
-
-            }
-
-
-            function formatHumanDuration(
-                seconds
-            ) {
-
-
-                if (
-                    !seconds ||
-                    seconds === 0
-                ) {
-
-                    return '--';
-
-                }
-
-
-                seconds =
-                    Number(seconds);
-
-
-                if (
-                    isNaN(seconds)
-                ) {
-
-                    return '--';
-
-                }
-
-
-                if (
-                    seconds < 0
-                ) {
-
-                    seconds = 0;
-
-                }
-
-
-                const days =
-                    Math.floor(
-                        seconds / 86400
-                    );
-
 
                 const hours =
-                    Math.floor(
-                        (
-                            seconds %
-                            86400
-                        ) / 3600
-                    );
-
+                    String(date.getHours())
+                        .padStart(2, '0');
 
                 const minutes =
-                    Math.floor(
-                        (
-                            seconds %
-                            3600
-                        ) / 60
-                    );
+                    String(date.getMinutes())
+                        .padStart(2, '0');
 
+                const seconds =
+                    String(date.getSeconds())
+                        .padStart(2, '0');
 
-                const secs =
-                    Math.floor(
-                        seconds % 60
-                    );
+                const day =
+                    String(date.getDate())
+                        .padStart(2, '0');
 
+                const month =
+                    String(date.getMonth() + 1)
+                        .padStart(2, '0');
 
-                const parts =
-                    [];
+                const year =
+                    date.getFullYear();
 
+                return `${hours}:${minutes}:${seconds} - ${day}/${month}/${year}`;
 
-                if (
-                    days > 0
-                ) {
+            } catch (e) {
 
-                    parts.push(
-                        `${days}d`
-                    );
+                return isoString;
+            }
+        }
 
-                }
+        function formatHumanDuration(seconds) {
 
-
-                if (
-                    hours > 0
-                ) {
-
-                    parts.push(
-                        `${hours}h`
-                    );
-
-                }
-
-
-                if (
-                    minutes > 0
-                ) {
-
-                    parts.push(
-                        `${minutes}m`
-                    );
-
-                }
-
-
-                if (
-                    secs > 0 ||
-                    parts.length === 0
-                ) {
-
-                    parts.push(
-                        `${secs}s`
-                    );
-
-                }
-
-
-                return parts.join(
-                    ' '
-                );
-
-
+            if (!seconds || seconds === 0) {
+                return '--';
             }
 
+            seconds = Number(seconds);
 
+            if (isNaN(seconds)) {
+                return '--';
+            }
 
-            function showToastRaw(
-                htmlContent,
-                isOngoing = false
-            ) {
+            if (seconds < 0) {
+                seconds = 0;
+            }
 
+            const days =
+                Math.floor(seconds / 86400);
 
-                if (!stack) {
-
-                    return null;
-
-                }
-
-
-                const tempDiv =
-                    document.createElement(
-                        'div'
-                    );
-
-
-                tempDiv.innerHTML =
-                    htmlContent;
-
-
-                const toastEl =
-                    tempDiv
-                        .firstElementChild;
-
-
-                if (!toastEl) {
-
-                    return null;
-
-                }
-
-
-                stack.appendChild(
-                    toastEl
+            const hours =
+                Math.floor(
+                    (seconds % 86400) / 3600
                 );
 
+            const minutes =
+                Math.floor(
+                    (seconds % 3600) / 60
+                );
 
-                if (!isOngoing) {
+            const secs =
+                Math.floor(seconds % 60);
 
+            const parts = [];
 
-                    setTimeout(
-                        () => {
+            if (days > 0) {
+                parts.push(`${days}d`);
+            }
+
+            if (hours > 0) {
+                parts.push(`${hours}h`);
+            }
+
+            if (minutes > 0) {
+                parts.push(`${minutes}m`);
+            }
+
+            if (
+                secs > 0 ||
+                parts.length === 0
+            ) {
+                parts.push(`${secs}s`);
+            }
+
+            return parts.join(' ');
+        }
+
+        function showToastRaw(
+            htmlContent,
+            isOngoing = false
+        ) {
+
+            if (!stack) {
+                return null;
+            }
+
+            const oldToasts =
+                stack.querySelectorAll('.toast');
+
+            oldToasts.forEach(toast => {
+                toast.remove();
+            });
+
+            const tempDiv =
+                document.createElement('div');
+
+            tempDiv.innerHTML =
+                htmlContent.trim();
+
+            const toastEl =
+                tempDiv.firstElementChild;
+
+            if (!toastEl) {
+                return null;
+            }
+
+            stack.appendChild(toastEl);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    toastEl.classList.add('show');
+                });
+            });
+
+            if (!isOngoing) {
+
+                setTimeout(() => {
+
+                    if (
+                        toastEl &&
+                        toastEl.parentNode
+                    ) {
+
+                        toastEl.classList.remove('show');
+
+                        setTimeout(() => {
 
                             if (
                                 toastEl &&
                                 toastEl.parentNode
                             ) {
-
                                 toastEl.remove();
-
                             }
 
-                        },
-                        15000
-                    );
+                        }, 300);
+                    }
 
-
-                }
-
-
-                return toastEl;
-
-
+                }, 15000);
             }
 
+            return toastEl;
+        }
 
 
-            function getEventStyle(
-                evType
-            ) {
+        function getEventStyle(evType) {
 
+            if (evType === 'Refuel') {
 
-                if (
-                    evType === 'Refuel'
-                ) {
+                return {
+                    type: 'success',
+                    color: '#16A34A',
+                    title: 'Bắt đầu đổ xăng'
+                };
+            }
 
-                    return {
-                        type: 'success',
-                        color: '#16A34A',
-                        title:
-                            'Bắt đầu đổ xăng'
-                    };
+            if (evType === 'Theft') {
 
-                }
+                return {
+                    type: 'danger',
+                    color: '#DC2626',
+                    title: 'Cảnh báo: Bắt đầu trộm nhiên liệu'
+                };
+            }
 
+            if (evType === 'Driving') {
 
-                if (
-                    evType === 'Theft'
-                ) {
+                return {
+                    type: 'info',
+                    color: '#2563EB',
+                    title: 'Bắt đầu di chuyển (Driving)'
+                };
+            }
 
-                    return {
-                        type: 'danger',
-                        color: '#DC2626',
-                        title:
-                            'Cảnh báo: Bắt đầu trộm nhiên liệu'
-                    };
-
-                }
-
-
-                if (
-                    evType === 'Driving'
-                ) {
-
-                    return {
-                        type: 'info',
-                        color: '#2563EB',
-                        title:
-                            'Bắt đầu di chuyển (Driving)'
-                    };
-
-                }
-
-
-                if (
-                    evType === 'Idle'
-                ) {
-
-                    return {
-                        type: 'secondary',
-                        color: '#6B7280',
-                        title:
-                            'Xe bắt đầu dừng đỗ (Idle)'
-                    };
-
-                }
-
+            if (evType === 'Idle') {
 
                 return {
                     type: 'secondary',
                     color: '#6B7280',
-                    title:
-                        'Chuyển đổi trạng thái'
+                    title: 'Xe bắt đầu dừng đỗ (Idle)'
                 };
-
-
             }
 
+            return {
+                type: 'secondary',
+                color: '#6B7280',
+                title: 'Chuyển đổi trạng thái'
+            };
+        }
 
+        function showToastStart(ev) {
 
-            function showToastStart(
-                ev
+            if (!ev || !ev.event) {
+                return;
+            }
+
+            const eventId =
+                ev.id ||
+                ev.event_id ||
+                `${ev.event}_${ev.start_time}`;
+
+            window.shownToastStarts =
+                window.shownToastStarts ||
+                new Set();
+
+            if (
+                window.shownToastStarts.has(eventId)
             ) {
+                return;
+            }
 
+            window.shownToastStarts.add(eventId);
 
-                if (
-                    !ev ||
-                    !ev.event
-                ) {
+            const style =
+                getEventStyle(ev.event);
 
-                    return;
+            const fuelStart =
+                ev.fuel_start != null
+                    ? Number(ev.fuel_start).toFixed(2)
+                    : '...';
 
-                }
+            const startTime =
+                formatFullTime(ev.start_time);
 
+            let icon = '◆';
 
-                const style =
-                    getEventStyle(
-                        ev.event
-                    );
+            if (ev.event === 'Refuel') {
+                icon = '◈';
+            }
 
+            if (ev.event === 'Theft') {
+                icon = '!';
+            }
 
-                const fuelStart =
-                    (
-                        ev.fuel_start != null
-                    )
-                        ? Number(
-                            ev.fuel_start
-                        ).toFixed(2)
-                        : '...';
+            if (ev.event === 'Driving') {
+                icon = '▶';
+            }
 
+            if (ev.event === 'Idle') {
+                icon = '■';
+            }
 
-                const startTime =
-                    formatFullTime(
-                        ev.start_time
-                    );
+            const html = `
+                <div
+                    class="toast toast-simple toast-${style.type} show"
+                    role="alert"
+                    data-toast-type="start"
+                    data-event-id="${eventId}"
+                >
 
+                    <div class="toast-simple-content">
 
-                const html = `
+                        <div class="toast-simple-icon">
+                            ${icon}
+                        </div>
 
-                    <div
-                        class="toast align-items-center border-${style.type} border-2 show"
-                        role="alert"
-                    >
+                        <div class="toast-simple-body">
 
-                        <div class="d-flex">
+                            <div class="toast-simple-title">
+                                ${style.title}
 
-                            <div class="toast-body">
-
-                                <div>
-
-                                    <strong
-                                        class="text-${style.type}"
-                                    >
-                                        ${style.title}
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Mức nhiên liệu
-                                    tại thời điểm bắt đầu:
-
-                                    <strong>
-                                        ${fuelStart} L
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Thời gian bắt đầu:
-
-                                    ${startTime}
-
-                                </div>
-
+                                <span class="toast-live">
+                                    <span class="live-dot"></span>
+                                    LIVE
+                                </span>
                             </div>
 
+                            <div class="toast-simple-line">
+                                Nhiên liệu lúc bắt đầu:
+                                <strong>
+                                    ${fuelStart} L
+                                </strong>
+                            </div>
 
-                            <button
-                                type="button"
-                                class="btn-close me-2 m-auto"
-                                data-bs-dismiss="toast"
-                            ></button>
+                            <div class="toast-simple-line">
+                                Bắt đầu lúc:
+                                <strong>
+                                    ${startTime}
+                                </strong>
+                            </div>
 
                         </div>
 
+                        <button
+                            type="button"
+                            class="toast-close btn-close"
+                            aria-label="Close"
+                        ></button>
+
                     </div>
 
-                `;
+                </div>
+            `;
 
+            const toastEl =
+                showToastRaw(html);
 
-                showToastRaw(
-                    html,
-                    false
+            if (!toastEl) {
+                return;
+            }
+
+            const closeBtn =
+                toastEl.querySelector(
+                    '.toast-close'
+                );
+
+            if (closeBtn) {
+
+                closeBtn.onclick =
+                    function () {
+
+                        toastEl.classList.remove(
+                            'show'
+                        );
+
+                        setTimeout(() => {
+
+                            if (
+                                toastEl.parentNode
+                            ) {
+                                toastEl.remove();
+                            }
+
+                        }, 300);
+                    };
+            }
+
+            setTimeout(() => {
+
+                if (
+                    !toastEl ||
+                    !toastEl.parentNode
+                ) {
+                    return;
+                }
+
+                toastEl.classList.remove(
+                    'show'
+                );
+
+                setTimeout(() => {
+
+                    if (
+                        toastEl &&
+                        toastEl.parentNode
+                    ) {
+                        toastEl.remove();
+                    }
+
+                }, 300);
+
+            }, 3000);
+        }
+
+        function showToastOngoing(ev) {
+
+            if (!ev || !ev.event) {
+                return;
+            }
+
+            const eventId =
+                ev.id ||
+                ev.event_id ||
+                `${ev.event}_${ev.start_time}`;
+
+            window.dismissedOngoingToasts =
+                window.dismissedOngoingToasts ||
+                new Set();
+
+            if (
+                window.dismissedOngoingToasts.has(
+                    eventId
+                )
+            ) {
+                return;
+            }
+
+            const style =
+                getEventStyle(ev.event);
+
+            const durationStr =
+                formatHumanDuration(
+                    ev.duration_s || 0
+                );
+
+            const fuelCurrent =
+                ev.fuel_current != null
+                    ? Number(
+                        ev.fuel_current
+                    ).toFixed(2)
+                    : '...';
+
+            const delta =
+                ev.delta_fuel != null
+                    ? Number(ev.delta_fuel)
+                    : 0;
+
+            const sign =
+                delta > 0
+                    ? '+'
+                    : delta < 0
+                        ? '-'
+                        : '';
+
+            const statusLabel =
+                ev.fuel_status === 'Refueling'
+                    ? 'Đang nạp'
+                    : ev.fuel_status === 'Theft'
+                        ? 'Bị mất cắp'
+                        : ev.fuel_status === 'Consuming'
+                            ? 'Tiêu hao'
+                            : 'Đứng yên';
+
+            let icon = '◆';
+
+            if (ev.event === 'Refuel') {
+                icon = '◈';
+            }
+
+            if (ev.event === 'Theft') {
+                icon = '!';
+            }
+
+            if (ev.event === 'Driving') {
+                icon = '▶';
+            }
+
+            if (ev.event === 'Idle') {
+                icon = '■';
+            }
+
+            const html = `
+                <div
+                    class="toast toast-active toast-${style.type} show"
+                    role="alert"
+                    id="toast-active"
+                    data-event-id="${eventId}"
+                >
+
+                    <div class="toast-content">
+
+                        <div class="toast-icon">
+                            ${icon}
+                        </div>
+
+                        <div class="toast-info">
+
+                            <div class="toast-header-custom">
+
+                                <strong class="toast-title">
+                                    ${style.title}
+                                </strong>
+
+                                <span class="toast-live">
+                                    <span class="live-dot"></span>
+                                    LIVE
+                                </span>
+
+                            </div>
+
+                            <div class="toast-row">
+
+                                <span>
+                                    Nhiên liệu thay đổi
+                                </span>
+
+                                <strong class="toast-value">
+                                    ${sign}${Math.abs(delta).toFixed(2)} L
+                                </strong>
+
+                                <span class="toast-status">
+                                    ${statusLabel}
+                                </span>
+
+                            </div>
+
+                            <div class="toast-row">
+
+                                <span>
+                                    Thời gian đã diễn ra
+                                </span>
+
+                                <strong>
+                                    ${durationStr}
+                                </strong>
+
+                            </div>
+
+                            <div class="toast-row">
+
+                                <span>
+                                    Nhiên liệu hiện tại
+                                </span>
+
+                                <strong>
+                                    ${fuelCurrent} L
+                                </strong>
+
+                            </div>
+
+                            <div class="toast-time">
+                                Bắt đầu lúc
+                                ${formatFullTime(ev.start_time)}
+                            </div>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="toast-close btn-close"
+                            aria-label="Close"
+                        ></button>
+
+                    </div>
+
+                </div>
+            `;
+
+            let activeEl =
+                document.getElementById(
+                    'toast-active'
                 );
 
 
-            }
-
-
-
-            function showToastOngoing(
-                ev
+            if (
+                activeEl &&
+                activeEl.dataset.eventId ===
+                String(eventId)
             ) {
 
+                const wasShown =
+                    activeEl.classList.contains('show');
 
-                if (
-                    !ev ||
-                    !ev.event
-                ) {
+                activeEl.outerHTML = html;
 
-                    return;
-
-                }
-
-
-                const style =
-                    getEventStyle(
-                        ev.event
-                    );
-
-
-                const durationStr =
-                    formatHumanDuration(
-                        ev.duration_s || 0
-                    );
-
-
-                const fuelCurrent =
-                    ev.fuel_current != null
-                        ? Number(
-                            ev.fuel_current
-                        ).toFixed(2)
-                        : '...';
-
-
-                const delta =
-                    ev.delta_fuel != null
-                        ? Number(
-                            ev.delta_fuel
-                        )
-                        : 0;
-
-
-                const sign =
-                    delta > 0
-                        ? '+'
-                        : (
-                            delta < 0
-                                ? '-'
-                                : ''
-                        );
-
-
-                const statusLabel =
-                    ev.fuel_status ===
-                    'Refueling'
-                        ? 'Đang nạp'
-                        : (
-                            ev.fuel_status ===
-                            'Theft'
-                                ? 'Bị mất cắp'
-                                : (
-                                    ev.fuel_status ===
-                                    'Consuming'
-                                        ? 'Tiêu hao'
-                                        : 'Đứng yên'
-                                )
-                        );
-
-
-                const html = `
-
-                    <div
-                        class="
-                            toast
-                            align-items-center
-                            border-${style.type}
-                            border-2
-                            show
-                        "
-                        role="alert"
-                        id="toast-active"
-                    >
-
-                        <div class="d-flex">
-
-                            <div class="toast-body">
-
-
-                                <div>
-
-                                    <strong
-                                        class="text-${style.type}"
-                                    >
-                                        ${style.title}
-                                    </strong>
-
-
-                                    <span
-                                        class="
-                                            badge
-                                            bg-danger
-                                            rounded-pill
-                                            ms-2
-                                        "
-                                    >
-                                        LIVE
-                                    </span>
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Nhiên liệu thay đổi:
-
-                                    <strong
-                                        class="text-${style.type}"
-                                    >
-                                        ${sign}${Math.abs(delta).toFixed(2)} L
-                                    </strong>
-
-                                    (${statusLabel})
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Thời gian đã diễn ra:
-
-                                    <strong>
-                                        ${durationStr}
-                                    </strong>
-
-                                    |
-
-                                    Nhiên liệu hiện tại:
-
-                                    ${fuelCurrent} L
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Thời điểm bắt đầu:
-
-                                    ${formatFullTime(
-                                        ev.start_time
-                                    )}
-
-                                </div>
-
-
-                            </div>
-
-
-                            <button
-                                type="button"
-                                class="btn-close me-2 m-auto"
-                                data-bs-dismiss="toast"
-                            ></button>
-
-
-                        </div>
-
-                    </div>
-
-                `;
-
-
-                const activeEl =
+                activeEl =
                     document.getElementById(
                         'toast-active'
                     );
 
+                if (
+                    activeEl &&
+                    wasShown
+                ) {
+                    activeEl.classList.add('show');
+                }
+
+            }
+
+            else {
 
                 if (activeEl) {
 
-                    activeEl.outerHTML =
-                        html;
-
-                } else {
-
-                    showToastRaw(
-                        html,
-                        true
+                    activeEl.classList.remove(
+                        'show'
                     );
 
+                    activeEl.remove();
                 }
-
-
-            }
-
-
-
-            function showToastEnd(
-                ev
-            ) {
-
-
-                if (
-                    !ev ||
-                    !ev.state ||
-                    ev.delta == null
-                ) {
-
-                    return;
-
-                }
-
-
-                const style =
-                    getEventStyle(
-                        ev.state
-                    );
-
-
-                const titleEnd =
-                    ev.state === 'Refuel'
-                        ? 'Đã hoàn thành đổ xăng'
-                        : (
-                            ev.state === 'Theft'
-                                ? 'Đã kết thúc trộm nhiên liệu'
-                                : (
-                                    ev.state === 'Driving'
-                                        ? 'Kết thúc di chuyển (Driving)'
-                                        : 'Kết thúc dừng đỗ (Idle)'
-                                )
-                        );
-
-
-                const endTime =
-                    formatFullTime(
-                        ev.end_time
-                    );
-
-
-                const endFuel =
-                    ev.end_fuel != null
-                        ? Number(
-                            ev.end_fuel
-                        ).toFixed(2)
-                        : '--';
-
-
-                const delta =
-                    Number(
-                        ev.delta
-                    );
-
-
-                const totalDelta =
-                    delta > 0
-                        ? `+${delta.toFixed(2)} L`
-                        : `${delta.toFixed(2)} L`;
-
-
-                const duration =
-                    formatHumanDuration(
-                        ev.duration_s
-                    );
-
-
-                const html = `
-
-                    <div
-                        class="
-                            toast
-                            align-items-center
-                            border-${style.type}
-                            border-2
-                            show
-                        "
-                        role="alert"
-                    >
-
-                        <div class="d-flex">
-
-                            <div class="toast-body">
-
-
-                                <div>
-
-                                    <strong
-                                        class="text-${style.type}"
-                                    >
-                                        ${titleEnd}
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Kết thúc lúc:
-
-                                    <strong>
-                                        ${endTime}
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Nhiên liệu lúc kết thúc:
-
-                                    <strong>
-                                        ${endFuel} L
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Tổng thay đổi nhiên liệu:
-
-                                    <strong
-                                        class="
-                                            fw-bold
-                                            text-${style.type}
-                                        "
-                                    >
-                                        ${totalDelta}
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="small text-muted">
-
-                                    Tổng thời gian duy trì:
-
-                                    <strong>
-                                        ${duration}
-                                    </strong>
-
-                                </div>
-
-
-                            </div>
-
-
-                            <button
-                                type="button"
-                                class="btn-close me-2 m-auto"
-                                data-bs-dismiss="toast"
-                            ></button>
-
-
-                        </div>
-
-                    </div>
-
-                `;
-
 
                 showToastRaw(
                     html,
-                    false
+                    true
                 );
 
+                activeEl =
+                    document.getElementById(
+                        'toast-active'
+                    );
+            }
 
+            if (!activeEl) {
+                return;
             }
 
 
-            async function fetchNotifications() {
+            const closeBtn =
+                activeEl.querySelector(
+                    '.toast-close'
+                );
 
+            if (closeBtn) {
 
-                try {
+                closeBtn.onclick =
+                    function () {
 
-
-                    const carId =
-                        window.currentVehicle ||
-                        'Car 2';
-
-
-                    const [
-                        toastRes,
-                        alertRes
-                    ] =
-                        await Promise.all([
-
-                            fetch(
-                                `/api/toasts?car_id=${encodeURIComponent(carId)}`
-                            ),
-
-                            fetch(
-                                `/api/alerts?car_id=${encodeURIComponent(carId)}`
-                            )
-
-                        ]);
-
-
-
-                    if (!toastRes.ok) {
-
-                        throw new Error(
-                            `Toast API error: ${toastRes.status}`
+                        window.dismissedOngoingToasts.add(
+                            eventId
                         );
 
-                    }
-
-
-                    if (!alertRes.ok) {
-
-                        throw new Error(
-                            `Alert API error: ${alertRes.status}`
+                        activeEl.classList.remove(
+                            'show'
                         );
 
+                        setTimeout(() => {
+
+                            if (
+                                activeEl &&
+                                activeEl.parentNode
+                            ) {
+                                activeEl.remove();
+                            }
+
+                        }, 300);
+                    };
+            }
+        }
+
+
+        function showToastEnd(ev) {
+
+            if (
+                !ev ||
+                !ev.state ||
+                ev.delta == null
+            ) {
+                return;
+            }
+
+            const eventId =
+                ev.id ||
+                ev.event_id ||
+                `${ev.state}_${ev.end_time}`;
+
+            window.shownToastEnds =
+                window.shownToastEnds ||
+                new Set();
+
+            if (
+                window.shownToastEnds.has(
+                    eventId
+                )
+            ) {
+                return;
+            }
+
+            window.shownToastEnds.add(
+                eventId
+            );
+
+            const style =
+                getEventStyle(ev.state);
+
+            const titleEnd =
+                ev.state === 'Refuel'
+                    ? 'Đã hoàn thành đổ xăng'
+                    : ev.state === 'Theft'
+                        ? 'Đã kết thúc trộm nhiên liệu'
+                        : ev.state === 'Driving'
+                            ? 'Kết thúc di chuyển (Driving)'
+                            : 'Kết thúc dừng đỗ (Idle)';
+
+            const endTime =
+                formatFullTime(
+                    ev.end_time
+                );
+
+            const endFuel =
+                ev.end_fuel != null
+                    ? Number(
+                        ev.end_fuel
+                    ).toFixed(2)
+                    : '--';
+
+            const delta =
+                Number(ev.delta);
+
+            const totalDelta =
+                delta > 0
+                    ? `+${delta.toFixed(2)} L`
+                    : `${delta.toFixed(2)} L`;
+
+            const duration =
+                formatHumanDuration(
+                    ev.duration_s || 0
+                );
+
+            let icon = '◆';
+
+            if (ev.state === 'Refuel') {
+                icon = '◈';
+            }
+
+            if (ev.state === 'Theft') {
+                icon = '!';
+            }
+
+            if (ev.state === 'Driving') {
+                icon = '▶';
+            }
+
+            if (ev.state === 'Idle') {
+                icon = '■';
+            }
+
+            const html = `
+                <div
+                    class="toast toast-simple toast-${style.type} show"
+                    role="alert"
+                    data-toast-type="end"
+                    data-event-id="${eventId}"
+                >
+
+                    <div class="toast-simple-content">
+
+                        <div class="toast-simple-icon">
+                            ${icon}
+                        </div>
+
+                        <div class="toast-simple-body">
+
+                            <div class="toast-simple-title">
+                                ${titleEnd}
+                            </div>
+
+                            <div class="toast-simple-line">
+                                Kết thúc lúc:
+                                <strong>
+                                    ${endTime}
+                                </strong>
+                            </div>
+
+                            <div class="toast-simple-line">
+                                Nhiên liệu lúc kết thúc:
+                                <strong>
+                                    ${endFuel} L
+                                </strong>
+                            </div>
+
+                            <div class="toast-simple-line">
+                                Thay đổi nhiên liệu:
+                                <strong>
+                                    ${totalDelta}
+                                </strong>
+                            </div>
+
+                            <div class="toast-simple-line">
+                                Tổng thời gian:
+                                <strong>
+                                    ${duration}
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="toast-close btn-close"
+                            aria-label="Close"
+                        ></button>
+
+                    </div>
+
+                </div>
+            `;
+
+            const toastEl =
+                showToastRaw(html);
+
+            if (!toastEl) {
+                return;
+            }
+
+            const closeBtn =
+                toastEl.querySelector(
+                    '.toast-close'
+                );
+
+            if (closeBtn) {
+
+                closeBtn.onclick =
+                    function () {
+
+                        toastEl.classList.remove(
+                            'show'
+                        );
+
+                        setTimeout(() => {
+
+                            if (
+                                toastEl.parentNode
+                            ) {
+                                toastEl.remove();
+                            }
+
+                        }, 300);
+                    };
+            }
+
+            setTimeout(() => {
+
+                if (
+                    !toastEl ||
+                    !toastEl.parentNode
+                ) {
+                    return;
+                }
+
+                toastEl.classList.remove(
+                    'show'
+                );
+
+                setTimeout(() => {
+
+                    if (
+                        toastEl &&
+                        toastEl.parentNode
+                    ) {
+                        toastEl.remove();
                     }
 
+                }, 300);
 
+            }, 5000);
+        }
 
-                    const toastData =
-                        await toastRes.json();
+        async function fetchNotifications() {
 
+            try {
 
-                    const alertData =
-                        await alertRes.json();
+                const carId =
+                    window.currentVehicle ||
+                    'Car 2';
 
+                const [
+                    toastRes,
+                    alertRes
+                ] =
+                    await Promise.all([
 
-                    if (!alertData) {
+                        fetch(
+                            `/api/toasts?car_id=${encodeURIComponent(carId)}`
+                        ),
 
-                        return;
-
-                    }
-
-
-                    const active =
-                        alertData.active;
-
-
-                    const history =
-                        (
-                            alertData.history ||
-                            []
+                        fetch(
+                            `/api/alerts?car_id=${encodeURIComponent(carId)}`
                         )
+                    ]);
+
+                if (!toastRes.ok) {
+
+                    throw new Error(
+                        `Toast API error: ${toastRes.status}`
+                    );
+                }
+
+                if (!alertRes.ok) {
+
+                    throw new Error(
+                        `Alert API error: ${alertRes.status}`
+                    );
+                }
+
+                const toastData =
+                    await toastRes.json();
+
+                const alertData =
+                    await alertRes.json();
+
+                if (!alertData) {
+                    return;
+                }
+
+                const active =
+                    alertData.active;
+
+                const history =
+                    (alertData.history || [])
                         .filter(
                             ev =>
                                 ev !== null &&
@@ -2008,552 +1565,486 @@
                                 ev.state
                         );
 
+                const activeCount =
+                    active &&
+                    (
+                        active.event === 'Refuel' ||
+                        active.event === 'Theft' ||
+                        active.event === 'Driving' ||
+                        active.event === 'Idle'
+                    )
+                        ? 1
+                        : 0;
 
-                    const activeCount =
-                        (
-                            active &&
-                            (
-                                active.event === 'Refuel' ||
-                                active.event === 'Theft' ||
-                                active.event === 'Driving' ||
-                                active.event === 'Idle'
-                            )
-                        )
-                            ? 1
-                            : 0;
+                const badgeCount =
+                    history.length +
+                    activeCount;
 
+                if (dotEl) {
 
-                    const badgeCount =
-                        history.length +
-                        activeCount;
+                    dotEl.style.display =
+                        badgeCount > 0
+                            ? 'block'
+                            : 'none';
+                }
 
+                if (badgeEl) {
 
-                    if (dotEl) {
+                    badgeEl.innerText =
+                        badgeCount;
+                }
 
-                        dotEl.style.display =
-                            badgeCount > 0
-                                ? 'block'
-                                : 'none';
+                if (active) {
 
-                    }
+                    const currentEventId =
+                        active.start_time;
 
+                    if (
+                        activeEventId !==
+                        currentEventId
+                    ) {
 
-                    if (badgeEl) {
-
-                        badgeEl.innerText =
-                            badgeCount;
-
-                    }
-
-
-                    if (active) {
-
-
-                        const currentEventId =
-                            active.start_time;
-
-
-                        if (
-                            activeEventId !==
-                            currentEventId
-                        ) {
-
-
-                            showToastStart(
-                                active
-                            );
-
-
-                            activeEventId =
-                                currentEventId;
-
-
-                            endedEventId =
-                                null;
-
-
-                        }
-
-
-                        showToastOngoing(
+                        showToastStart(
                             active
                         );
 
+                        activeEventId =
+                            currentEventId;
 
+                        endedEventId =
+                            null;
                     }
 
+                    showToastOngoing(
+                        active
+                    );
 
+                } else if (
+                    activeEventId !== null
+                ) {
 
-                    else if (
-                        activeEventId !== null
-                    ) {
+                    const liveToast =
+                        document.getElementById(
+                            'toast-active'
+                        );
 
+                    if (liveToast) {
 
-                        const liveToast =
-                            document.getElementById(
-                                'toast-active'
-                            );
+                        liveToast.classList.remove(
+                            'show'
+                        );
 
-
-                        if (liveToast) {
-
-                            liveToast.remove();
-
-                        }
-
-
-                        const latestFinished =
-                            history[0];
-
-
-                        if (
-                            latestFinished &&
-                            latestFinished.end_time
-                        ) {
-
-
-                            const finishedEventId =
-                                latestFinished.start_time;
-
+                        setTimeout(() => {
 
                             if (
-                                finishedEventId ===
-                                activeEventId &&
-                                endedEventId !==
-                                finishedEventId
+                                liveToast.parentNode
                             ) {
-
-
-                                showToastEnd(
-                                    latestFinished
-                                );
-
-
-                                endedEventId =
-                                    finishedEventId;
-
-
+                                liveToast.remove();
                             }
 
-                        }
-
-
-                        activeEventId =
-                            null;
-
-
+                        }, 300);
                     }
 
+                    const latestFinished =
+                        history[0];
 
+                    if (
+                        latestFinished &&
+                        latestFinished.end_time
+                    ) {
 
-                    if (container) {
-
-
-                        container.innerHTML =
-                            '';
-
-
-                        const items =
-                            [];
-
-
+                        const finishedEventId =
+                            latestFinished.start_time;
 
                         if (
-                            active &&
-                            (
-                                active.event === 'Refuel' ||
-                                active.event === 'Theft' ||
-                                active.event === 'Driving' ||
-                                active.event === 'Idle'
-                            )
+                            finishedEventId ===
+                                activeEventId &&
+                            endedEventId !==
+                                finishedEventId
                         ) {
 
+                            showToastEnd(
+                                latestFinished
+                            );
+
+                            endedEventId =
+                                finishedEventId;
+                        }
+                    }
+
+                    activeEventId =
+                        null;
+                }
+
+                if (container) {
+
+                    container.innerHTML =
+                        '';
+
+                    const items = [];
+
+                    if (
+                        active &&
+                        (
+                            active.event === 'Refuel' ||
+                            active.event === 'Theft' ||
+                            active.event === 'Driving' ||
+                            active.event === 'Idle'
+                        )
+                    ) {
+
+                        const startTime =
+                            formatShortTime(
+                                active.start_time
+                            );
+
+                        const activeDelta =
+                            active.delta_fuel != null
+                                ? Number(
+                                    active.delta_fuel
+                                )
+                                : null;
+
+                        const deltaStr =
+                            activeDelta !== null &&
+                            !isNaN(activeDelta)
+
+                                ? activeDelta > 0
+
+                                    ? `+${activeDelta.toFixed(2)}L`
+
+                                    : `${activeDelta.toFixed(2)}L`
+
+                                : '--';
+
+                        items.push({
+
+                            type: 'active',
+
+                            title:
+                                `${active.event} (Đang diễn ra)`,
+
+                            delta:
+                                deltaStr,
+
+                            time:
+                                startTime,
+
+                            badge:
+                                'bg-danger'
+                        });
+                    }
+
+                    const safeToastData =
+                        Array.isArray(toastData)
+                            ? toastData
+                            : [];
+
+                    const reversedToasts =
+                        [
+                            ...safeToastData
+                        ].reverse();
+
+                    for (
+                        const t of reversedToasts
+                    ) {
+
+                        if (
+                            items.length >= 4
+                        ) {
+                            break;
+                        }
+
+                        if (
+                            !t ||
+                            !t.type
+                        ) {
+                            continue;
+                        }
+
+                        if (
+                            t.type === 'START'
+                        ) {
 
                             const startTime =
                                 formatShortTime(
-                                    active.start_time
+                                    t.start_time
                                 );
 
+                            let displayValue =
+                                t.fuel_start;
 
-                            const activeDelta =
-                                active.delta_fuel != null
+                            if (
+                                displayValue === null ||
+                                displayValue === undefined
+                            ) {
+
+                                displayValue =
+                                    t.fuel_current;
+                            }
+
+                            const numericValue =
+                                displayValue !== null &&
+                                displayValue !== undefined
                                     ? Number(
-                                        active.delta_fuel
+                                        displayValue
                                     )
                                     : null;
 
+                            const deltaDisplay =
+                                numericValue !== null &&
+                                !isNaN(numericValue)
 
-                            const deltaStr =
-                                activeDelta !== null &&
-                                !isNaN(activeDelta)
-                                    ? (
-                                        activeDelta > 0
-                                            ? `+${activeDelta.toFixed(2)}L`
-                                            : `${activeDelta.toFixed(2)}L`
-                                    )
-                                    : '--';
+                                    ? `${numericValue.toFixed(2)}L`
 
+                                    : '...';
 
                             items.push({
 
-                                type: 'active',
+                                type:
+                                    'start',
 
                                 title:
-                                    `${active.event} (Đang diễn ra)`,
+                                    `Bắt đầu ${t.event}`,
 
                                 delta:
-                                    deltaStr,
+                                    `Nhiên liệu: ${deltaDisplay}`,
 
                                 time:
                                     startTime,
 
                                 badge:
-                                    'bg-danger'
-
+                                    'bg-primary'
                             });
-
-
                         }
 
-
-
-                        const safeToastData =
-                            Array.isArray(
-                                toastData
-                            )
-                                ? toastData
-                                : [];
-
-
-                        const reversedToasts =
-                            [
-                                ...safeToastData
-                            ]
-                            .reverse();
-
-
-                        for (
-                            const t of reversedToasts
+                        else if (
+                            t.type === 'END'
                         ) {
 
+                            const endTime =
+                                formatShortTime(
+                                    t.end_time
+                                );
 
-                            if (
-                                items.length >= 4
-                            ) {
-
-                                break;
-
-                            }
-
-
-                            if (
-                                !t ||
-                                !t.type
-                            ) {
-
-                                continue;
-
-                            }
-
-
-
-                            if (
-                                t.type === 'START'
-                            ) {
-
-
-                                const startTime =
-                                    formatShortTime(
-                                        t.start_time
-                                    );
-
-
-                                let displayValue =
-                                    t.fuel_start;
-
-
-                                if (
-                                    displayValue ===
-                                    null ||
-                                    displayValue ===
-                                    undefined
-                                ) {
-
-                                    displayValue =
-                                        t.fuel_current;
-
-                                }
-
-
-                                const numericValue =
-                                    displayValue !==
-                                        null &&
-                                    displayValue !==
-                                        undefined
-                                        ? Number(
-                                            displayValue
-                                        )
-                                        : null;
-
-
-                                const deltaDisplay =
-                                    numericValue !== null &&
-                                    !isNaN(
-                                        numericValue
+                            const numericDelta =
+                                t.delta !== null &&
+                                t.delta !== undefined
+                                    ? Number(
+                                        t.delta
                                     )
-                                        ? `${numericValue.toFixed(2)}L`
-                                        : '...';
+                                    : null;
 
+                            const deltaText =
+                                numericDelta !== null &&
+                                !isNaN(numericDelta)
 
-                                items.push({
+                                    ? numericDelta > 0
 
-                                    type: 'start',
+                                        ? `+${numericDelta.toFixed(2)}L`
 
-                                    title:
-                                        `Bắt đầu ${t.event}`,
+                                        : `${numericDelta.toFixed(2)}L`
 
-                                    delta:
-                                        `Nhiên liệu: ${deltaDisplay}`,
+                                    : '...';
 
-                                    time:
-                                        startTime,
+                            items.push({
 
-                                    badge:
-                                        'bg-primary'
+                                type:
+                                    'end',
 
-                                });
+                                title:
+                                    `Kết thúc ${t.event}`,
 
+                                delta:
+                                    `Thay đổi: ${deltaText}`,
 
-                            }
+                                time:
+                                    endTime,
 
-
-
-                            else if (
-                                t.type === 'END'
-                            ) {
-
-
-                                const endTime =
-                                    formatShortTime(
-                                        t.end_time
-                                    );
-
-
-                                const numericDelta =
-                                    t.delta !==
-                                        null &&
-                                    t.delta !==
-                                        undefined
-                                        ? Number(
-                                            t.delta
-                                        )
-                                        : null;
-
-
-                                const deltaText =
-                                    numericDelta !== null &&
-                                    !isNaN(
-                                        numericDelta
-                                    )
-                                        ? (
-                                            numericDelta > 0
-                                                ? `+${numericDelta.toFixed(2)}L`
-                                                : `${numericDelta.toFixed(2)}L`
-                                        )
-                                        : '...';
-
-
-                                items.push({
-
-                                    type: 'end',
-
-                                    title:
-                                        `Kết thúc ${t.event}`,
-
-                                    delta:
-                                        `Thay đổi: ${deltaText}`,
-
-                                    time:
-                                        endTime,
-
-                                    badge:
-                                        'bg-secondary'
-
-                                });
-
-
-                            }
-
-
+                                badge:
+                                    'bg-secondary'
+                            });
                         }
+                    }
 
+                    if (
+                        items.length === 0
+                    ) {
 
+                        container.innerHTML = `
+                            <li class="dropdown-item text-muted py-3 text-center">
+                                Không có thông báo nào
+                            </li>
+                        `;
 
-                        if (
-                            items.length === 0
-                        ) {
+                    } else {
 
+                        items.forEach(it => {
 
-                            container.innerHTML = `
+                            container.innerHTML += `
+                                <li class="dropdown-item notification-item">
 
-                                <li
-                                    class="
-                                        dropdown-item
-                                        text-muted
-                                        py-3
-                                        text-center
-                                    "
-                                >
+                                    <div class="notification-copy">
 
-                                    Không có thông báo nào
-
-                                </li>
-
-                            `;
-
-
-                        }
-
-
-
-                        else {
-
-
-                            for (
-                                const it of items
-                            ) {
-
-
-                                container.innerHTML += `
-
-                                    <li
-                                        class="
-                                            dropdown-item
-                                            notification-item
-                                        "
-                                    >
-
-                                        <div
-                                            class="
-                                                notification-copy
-                                            "
-                                        >
-
-
-                                            <div
-                                                class="
-                                                    notification-title
-                                                "
-                                            >
-                                                ${it.title}
-                                            </div>
-
-
-                                            <div
-                                                class="
-                                                    notification-meta
-                                                "
-                                            >
-                                                ${it.delta}
-                                            </div>
-
-
-                                            <div
-                                                class="
-                                                    notification-meta
-                                                    footer
-                                                    text-muted
-                                                "
-                                            >
-                                                ${it.time}
-                                            </div>
-
-
+                                        <div class="notification-title">
+                                            ${it.title}
                                         </div>
 
-                                    </li>
+                                        <div class="notification-meta">
+                                            ${it.delta}
+                                        </div>
 
-                                `;
+                                        <div class="notification-meta footer text-muted">
+                                            ${it.time}
+                                        </div>
 
+                                    </div>
 
-                            }
-
-
-                        }
-
-
+                                </li>
+                            `;
+                        });
                     }
-
-
-                } catch (e) {
-
-
-
-                    console.error(
-                        'Notification load error:',
-                        e
-                    );
-
-
                 }
 
+            } catch (e) {
 
-            }
-
-
-
-            if (dropdownBtn) {
-
-
-                dropdownBtn.addEventListener(
-                    'shown.bs.dropdown',
-                    function () {
-
-
-                        if (dotEl) {
-
-                            dotEl.style.display =
-                                'none';
-
-                        }
-
-
-                        if (badgeEl) {
-
-                            badgeEl.innerText =
-                                '0';
-
-                        }
-
-
-                    }
+                console.error(
+                    'Notification load error:',
+                    e
                 );
-
-
             }
-
-
-
-            fetchNotifications();
-
-
-            setInterval(
-                fetchNotifications,
-                3000
-            );
-
-
         }
 
-    );
+        if (dropdownBtn) {
 
+            dropdownBtn.addEventListener(
+                'shown.bs.dropdown',
+                function () {
 
+                    if (dotEl) {
+                        dotEl.style.display =
+                            'none';
+                    }
+
+                    if (badgeEl) {
+                        badgeEl.innerText =
+                            '0';
+                    }
+                }
+            );
+        }
+
+        fetchNotifications();
+
+        setInterval(
+            fetchNotifications,
+            3000
+        );
+
+    });
+
+    //
+
+    window.addEventListener('resize', function () {
+        const sidebar =
+            document.getElementById('sidebar');
+
+        const menuButton =
+            document.getElementById(
+                'sidebar-menu-btn'
+            );
+
+        if (!sidebar) return;
+
+        if (window.innerWidth >= 992) {
+            sidebar.classList.remove('open');
+        }
+
+        if (menuButton) {
+            const isOpen =
+                window.innerWidth >= 992
+                    ? !sidebar.classList.contains('collapsed')
+                    : sidebar.classList.contains('open');
+
+            menuButton.setAttribute(
+                'aria-expanded',
+                isOpen ? 'true' : 'false'
+            );
+        }
+    });
+
+    
+// Hàm cập nhật lại biểu đồ khi chuyển chế độ sáng/tối
+window.updateChartTheme = function() {
+    const bgColor = getChartBackgroundColor();
+    const textColor = getChartTextColor();
+    const gridColor = getGridLineColor();
+
+    // Cập nhật cho Fuel Chart
+    if (fuelChart && !fuelChart.isDisposed()) {
+        fuelChart.setOption({
+            backgroundColor: bgColor,
+            textStyle: { color: textColor },
+            tooltip: {
+                backgroundColor: bgColor,
+                borderColor: isDarkMode() ? '#333333' : '#E5E7EB',
+                textStyle: { color: textColor }
+            },
+            xAxis: [
+                {
+                    axisLine: { lineStyle: { color: isDarkMode() ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor }
+                },
+                {
+                    axisLine: { lineStyle: { color: isDarkMode() ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor }
+                }
+            ],
+            yAxis: [
+                {
+                    axisLine: { lineStyle: { color: isDarkMode() ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor },
+                    splitLine: { lineStyle: { color: gridColor } }
+                },
+                {
+                    axisLine: { lineStyle: { color: isDarkMode() ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor },
+                    splitLine: { lineStyle: { color: gridColor } }
+                }
+            ]
+        }, false);
+    }
+
+    // Cập nhật cho Lifecycle Chart
+    if (lifecycleChart && !lifecycleChart.isDisposed()) {
+        const currentData = lifecycleChart.getOption();
+        
+        lifecycleChart.setOption({
+            backgroundColor: bgColor,
+            textStyle: { color: textColor },
+            title: {
+                textStyle: { color: textColor }
+            },
+            tooltip: {
+                backgroundColor: bgColor,
+                borderColor: isDarkMode() ? '#333333' : '#E5E7EB',
+                textStyle: { color: textColor }
+            },
+            xAxis: {
+                axisLine: { lineStyle: { color: isDarkMode() ? '#4B5563' : '#E5E7EB' } },
+                axisLabel: { color: textColor }
+            },
+            yAxis: {
+                axisLine: { lineStyle: { color: isDarkMode() ? '#4B5563' : '#E5E7EB' } },
+                axisLabel: { color: textColor },
+                splitLine: { lineStyle: { color: gridColor } }
+            }
+        }, false);
+    }
+};
 </script>
-
 
 {% block scripts %}{% endblock %}
 
-
 </body>
-
 </html>

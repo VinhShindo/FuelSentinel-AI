@@ -15,10 +15,29 @@ export const STATE_COLORS = {
 
 const EVENT_SEMANTIC_STATES = new Set(['Refuel', 'Theft', 'Fuel Theft']);
 
-const TEXT_DARK = '#111827';
-const TEXT_MUTED = '#4B5563';
-const GRID_LINE = 'rgba(148,163,184,0.35)';
-const BORDER_LIGHT = '#E5E7EB';
+function isDarkMode() {
+    return document.body.classList.contains('dark-mode') || 
+           document.documentElement.getAttribute('data-theme') === 'dark';
+}
+
+function getChartColors() {
+    return {
+        textDark: isDarkMode() ? '#F3F4F6' : '#111827',
+        textMuted: isDarkMode() ? '#9CA3AF' : '#4B5563',
+        gridLine: isDarkMode() ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.35)',
+        borderLight: isDarkMode() ? '#4B5563' : '#E5E7EB',
+        bgColor: isDarkMode() ? '#111827' : '#FFFFFF'
+    };
+}
+
+// =====================================================================
+// [QUAN TRỌNG] Giữ lại các biến này để không bị lỗi "BORDER_LIGHT is not defined"
+// Giá trị được cập nhật động mỗi lần gọi
+// =====================================================================
+const TEXT_DARK = isDarkMode() ? '#F3F4F6' : '#111827';
+const TEXT_MUTED = isDarkMode() ? '#9CA3AF' : '#4B5563';
+const GRID_LINE = isDarkMode() ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.35)';
+const BORDER_LIGHT = isDarkMode() ? '#4B5563' : '#E5E7EB';
 
 function formatTimeLabel(timeStr) {
     if (!timeStr || typeof timeStr !== 'string') return '';
@@ -72,12 +91,12 @@ function mergeAdjacentSegments(segments) {
 //   thì thực hiện lùi 2 điểm. Điều này giúp icon nằm sát đúng gốc sự kiện vật lý.
 // =====================================================================
 function getShiftAmount(seg, i, boundaryPoints) {
-    let shift = 1; 
+    let shift = 1;
     if (i > 0 && (seg.state === 'Refuel' || seg.state === 'Theft')) {
         // Điểm bắt đầu sự kiện theo logic Backend (boundary_point) nằm ở vị trí nào?
         // Nếu segment bắt đầu ở vị trí index (11:31), thì boundary_point cách nó -2 index (11:21).
         let boundaryIdx = seg.startIdx - 2;
-        
+
         // Kiểm tra xem tại vị trí đó có được Backend đánh dấu là boundary_point không
         if (boundaryIdx >= 0 && boundaryPoints && boundaryPoints[boundaryIdx] === true) {
             shift = 2;
@@ -256,7 +275,7 @@ function buildEventPins(events, boundaryPoints) {
         if (typeof evt.startIdx !== 'number' || typeof evt.endIdx !== 'number') return [];
         const color = evt.state === 'Refuel' ? '#16A34A' : '#DC2626';
         const charLabel = evt.state === 'Refuel' ? 'R' : 'T';
-        
+
         // Tính toán số điểm cần lùi icon pin, dựa hoàn toàn vào boundaryPoints
         let shift = 1;
         if (evt.state === 'Refuel' || evt.state === 'Theft') {
@@ -271,7 +290,7 @@ function buildEventPins(events, boundaryPoints) {
         return [
             {
                 // Lùi đúng shift (1 hoặc 2) điểm về bên trái
-                coord: [Math.max(0, evt.startIdx - shift), evt.startValue], 
+                coord: [Math.max(0, evt.startIdx - shift), evt.startValue],
                 symbol: 'pin',
                 symbolSize: 34,
                 symbolOffset: [0, '-50%'], // Căn chỉnh tâm đế pin chính xác vào toạ độ dữ liệu
@@ -340,7 +359,7 @@ export function buildChartOption(x_data, y_data, speed_data, states, rawData, po
         ? [
             ...buildMarkArea(speedSegments, speed_data.length, boundaryPoints),
             ...buildThinkingOverlayAreas(thinkingSegments, speed_data.length)
-          ]
+        ]
         : [];
 
     const segmentLabelData = buildSegmentLabels(fuelSegments);
@@ -361,8 +380,11 @@ export function buildChartOption(x_data, y_data, speed_data, states, rawData, po
     const maxSpeed = hasSpeed ? Math.max(20, ...speed_data) : 20;
     const speedYMax = Math.ceil((maxSpeed * 1.15) / 10) * 10;
 
+    const colors = getChartColors();
+
     const option = {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bgColor,
+        textStyle: { color: colors.textDark },
         tooltip: { trigger: 'axis' },
         legend: { show: false },
         axisPointer: { link: [{ xAxisIndex: hasSpeed ? [0, 1] : [0] }] },

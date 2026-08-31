@@ -1,0 +1,924 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/dashboard.css') }}"
+>
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/dashboard_user.css') }}"
+>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="user-dashboard">
+
+    <section class="user-command-header">
+
+        <div class="user-header-main">
+
+            <div class="user-header-content">
+
+                <div class="user-eyebrow">
+                    <span class="user-live-dot"></span>
+                    VEHICLE INTELLIGENCE
+                </div>
+
+                <div class="user-welcome">
+                    Chào mừng trở lại,
+                    <strong>
+                        {{ session.get('user', {}).get('full_name')
+                        or session.get('user', {}).get('email') }}
+                    </strong>
+                </div>
+
+                <h1>
+                    Vehicle
+                    <span>Command Center</span>
+                </h1>
+
+                <p>
+                    Theo dõi nhiên liệu, hành trình và cảnh báo AI
+                    của phương tiện được phân quyền theo thời gian thực.
+                </p>
+
+            </div>
+
+
+            <div class="user-header-visual">
+
+                <div class="user-orbit user-orbit--1"></div>
+                <div class="user-orbit user-orbit--2"></div>
+                <div class="user-orbit user-orbit--3"></div>
+
+                <div class="user-fuel-core">
+
+                    <i class="bi bi-fuel-pump-fill"></i>
+
+                    <span>LIVE</span>
+
+                    <small>
+                        TELEMETRY
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="user-vehicle-strip">
+
+            <div class="user-vehicle-identity">
+
+                <div class="user-vehicle-icon">
+                    <i class="bi bi-car-front-fill"></i>
+                </div>
+
+                <div>
+
+                    <span class="user-strip-label">
+                        VEHICLE
+                    </span>
+
+                    <strong id="user-current-vehicle">
+                        {{ current_car }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="user-strip-status">
+
+                <span class="user-status-dot"></span>
+
+                <div>
+                    <span>STATUS</span>
+                    <strong>Đang giám sát</strong>
+                </div>
+
+            </div>
+
+
+            <div class="user-strip-time">
+
+                <i class="bi bi-clock-history"></i>
+
+                <div>
+                    <span>MONITORING</span>
+                    <strong>Real-time</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <section class="user-kpi-grid">
+
+        <article class="user-kpi-card user-kpi-card--primary">
+
+            <div class="user-kpi-top">
+
+                <div class="user-kpi-icon">
+                    <i class="bi bi-fuel-pump-fill"></i>
+                </div>
+
+                <span class="user-kpi-status">
+                    LIVE
+                </span>
+
+            </div>
+
+            <div class="user-kpi-label">
+                NHIÊN LIỆU HIỆN TẠI
+            </div>
+
+            <div class="user-kpi-value">
+                <span id="kpi-fuel">
+                    18,560
+                </span>
+
+                <small>L</small>
+            </div>
+
+            <div class="user-kpi-description">
+                Mức nhiên liệu hiện tại
+            </div>
+
+        </article>
+
+
+        <article class="user-kpi-card">
+
+            <div class="user-kpi-top">
+
+                <div class="user-kpi-icon">
+                    <i class="bi bi-signpost-2-fill"></i>
+                </div>
+
+                <span class="user-kpi-neutral">
+                    TODAY
+                </span>
+
+            </div>
+
+            <div class="user-kpi-label">
+                QUÃNG ĐƯỜNG HÔM NAY
+            </div>
+
+            <div class="user-kpi-value">
+                <span id="kpi-speed">
+                    --
+                </span>
+
+                <small>km</small>
+            </div>
+
+            <div class="user-kpi-description">
+                Tổng quãng đường đã di chuyển
+            </div>
+
+        </article>
+
+
+        <article class="user-kpi-card">
+
+            <div class="user-kpi-top">
+
+                <div class="user-kpi-icon">
+                    <i class="bi bi-droplet-fill"></i>
+                </div>
+
+                <span class="user-kpi-neutral">
+                    AVG
+                </span>
+
+            </div>
+
+            <div class="user-kpi-label">
+                MỨC TIÊU THỤ
+            </div>
+
+            <div class="user-kpi-value">
+                --
+
+                <small>
+                    L/100km
+                </small>
+            </div>
+
+            <div class="user-kpi-description">
+                Mức tiêu thụ trung bình
+            </div>
+
+        </article>
+
+
+        <article class="user-kpi-card user-kpi-card--speed">
+
+            <div class="user-kpi-top">
+
+                <div class="user-kpi-icon">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+
+                <span class="user-kpi-status">
+                    LIVE
+                </span>
+
+            </div>
+
+            <div class="user-kpi-label">
+                VẬN TỐC HIỆN TẠI
+            </div>
+
+            <div class="user-kpi-value">
+
+                <span id="kpi-current-speed">
+                    --
+                </span>
+
+                <small>
+                    km/h
+                </small>
+
+            </div>
+
+            <div class="user-kpi-description">
+                Tốc độ xe theo thời gian thực
+            </div>
+
+        </article>
+
+    </section>
+
+
+
+    <section class="user-ai-panel">
+
+        <div class="user-ai-main">
+
+            <div class="user-ai-icon">
+                <i class="bi bi-stars"></i>
+            </div>
+
+            <div class="user-ai-content">
+
+                <div class="user-ai-eyebrow">
+                    AI INTELLIGENCE
+                </div>
+
+                <h2>
+                    Phân tích tình trạng xe
+                </h2>
+
+                <p>
+                    Hệ thống AI đang phân tích dữ liệu nhiên liệu
+                    và hành trình để phát hiện bất thường.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="user-ai-metrics">
+
+            <div class="user-ai-metric">
+
+                <span>
+                    RISK LEVEL
+                </span>
+
+                <strong id="user-risk-value">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div class="user-ai-divider"></div>
+
+
+            <div class="user-ai-metric">
+
+                <span>
+                    PREDICTION
+                </span>
+
+                <strong>
+                    --
+
+                </strong>
+
+            </div>
+
+
+            <div class="user-ai-divider"></div>
+
+
+            <div class="user-ai-metric">
+
+                <span>
+                    EVENTS
+                </span>
+
+                <strong id="user-ai-events">
+                    --
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="user-chart-layout">
+
+        <div class="user-chart-primary">
+
+            <div class="card-panel chart-container chart-container--fuel h-100">
+
+                <div class="chart-header">
+
+                    <div class="chart-title-wrap">
+
+                        <div class="chart-title-icon">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+
+                        <div>
+
+                            <div class="chart-eyebrow">
+                                TELEMETRY
+                            </div>
+
+                            <h6>
+                                Fuel &amp; Speed Timeline
+                            </h6>
+
+                        </div>
+
+                    </div>
+
+
+                    <span class="status-pill status-pill--success">
+
+                        <i class="bi bi-broadcast"></i>
+
+                        Live
+
+                    </span>
+
+                </div>
+
+
+                <div class="chart-canvas-wrap">
+
+                    <div
+                        id="fuel-chart"
+                        style="width:100%; height:100%; min-height:560px;"
+                    ></div>
+
+                </div>
+
+
+                <div
+                    id="chart-color-legend"
+                    class="chart-color-legend"
+                >
+
+                    <div class="legend-item">
+
+                        <span
+                            class="legend-dot"
+                            style="background:rgba(245,158,11,0.55);"
+                        ></span>
+
+                        Driving / Normal
+
+                    </div>
+
+
+                    <div class="legend-item">
+
+                        <span
+                            class="legend-dot"
+                            style="background:rgba(107,114,128,0.55);"
+                        ></span>
+
+                        Idle
+
+                    </div>
+
+
+                    <div class="legend-item">
+
+                        <span
+                            class="legend-dot"
+                            style="
+                                background:rgba(148,163,184,0.55);
+                                border:1px dashed #9CA3AF;
+                            "
+                        ></span>
+
+                        Thinking…
+
+                    </div>
+
+
+                    <div class="legend-item">
+
+                        <span
+                            class="legend-dot"
+                            style="background:rgba(22,163,74,0.75);"
+                        ></span>
+
+                        Refuel event
+
+                    </div>
+
+
+                    <div class="legend-item">
+
+                        <span
+                            class="legend-dot"
+                            style="background:rgba(220,38,38,0.75);"
+                        ></span>
+
+                        Theft event
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="user-chart-secondary">
+
+            <div class="card-panel chart-container chart-container--lifecycle h-100">
+
+                <div class="chart-header">
+
+                    <div class="chart-title-wrap">
+
+                        <div class="chart-title-icon">
+                            <i class="bi bi-activity"></i>
+                        </div>
+
+                        <div>
+
+                            <div class="chart-eyebrow">
+                                EVENT INTELLIGENCE
+                            </div>
+
+                            <h6>
+                                Event Lifecycle
+                            </h6>
+
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="status-pill status-pill--info"
+                        id="lifecycle-live-pill"
+                    >
+
+                        <i class="bi bi-lightning-charge"></i>
+
+                        Active tracking
+
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="lifecycle-chart"
+                    style="width:100%;"
+                ></div>
+
+
+                <div
+                    class="stage-stepper"
+                    id="stage-stepper"
+                >
+
+                    <div
+                        class="stage-step"
+                        data-stage="normal"
+                    >
+
+                        <div class="stage-icon">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+
+                        <div class="stage-label">
+                            Normal
+                        </div>
+
+                        <div
+                            class="stage-time"
+                            data-time="normal"
+                        ></div>
+
+                    </div>
+
+
+                    <div class="stage-connector"></div>
+
+
+                    <div
+                        class="stage-step"
+                        data-stage="candidate"
+                    >
+
+                        <div class="stage-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+
+                        <div class="stage-label">
+                            Candidate
+                        </div>
+
+                        <div
+                            class="stage-time"
+                            data-time="candidate"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="stage-connector"></div>
+
+
+                    <div
+                        class="stage-step"
+                        data-stage="confirmed"
+                    >
+
+                        <div class="stage-icon">
+                            <i class="bi bi-fuel-pump"></i>
+                        </div>
+
+                        <div class="stage-label">
+                            Confirmed
+                        </div>
+
+                        <div
+                            class="stage-time"
+                            data-time="confirmed"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="stage-connector"></div>
+
+
+                    <div
+                        class="stage-step"
+                        data-stage="monitoring"
+                    >
+
+                        <div class="stage-icon">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+
+                        <div class="stage-label">
+                            Monitoring
+                        </div>
+
+                        <div
+                            class="stage-time"
+                            data-time="monitoring"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="stage-connector"></div>
+
+
+                    <div
+                        class="stage-step"
+                        data-stage="finished"
+                    >
+
+                        <div class="stage-icon">
+                            <i class="bi bi-flag"></i>
+                        </div>
+
+                        <div class="stage-label">
+                            Finished
+                        </div>
+
+                        <div
+                            class="stage-time"
+                            data-time="finished"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="lifecycle-summary"
+                    id="lifecycle-summary"
+                >
+
+                    <div class="summary-cell">
+
+                        <div class="summary-label">
+                            Event Type
+                        </div>
+
+                        <div
+                            class="summary-value"
+                            id="ls-event-type"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-cell">
+
+                        <div class="summary-label">
+                            Start Time
+                        </div>
+
+                        <div
+                            class="summary-value"
+                            id="ls-start-time"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-cell">
+
+                        <div class="summary-label">
+                            End Time
+                        </div>
+
+                        <div
+                            class="summary-value"
+                            id="ls-end-time"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-cell">
+
+                        <div class="summary-label">
+                            Duration
+                        </div>
+
+                        <div
+                            class="summary-value"
+                            id="ls-duration"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-cell">
+
+                        <div class="summary-label">
+                            Fuel Change
+                        </div>
+
+                        <div
+                            class="summary-value"
+                            id="ls-fuel-change"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-cell">
+
+                        <div class="summary-label">
+                            Confidence
+                        </div>
+
+                        <div
+                            class="summary-value"
+                            id="ls-max-confidence"
+                        >
+                            --
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="lifecycle-sample-note"
+                    id="lifecycle-sample-note"
+                    style="display:none;"
+                >
+
+                    <i class="bi bi-info-circle"></i>
+
+                    Đang hiển thị dữ liệu mẫu minh hoạ
+                    (chưa có sự kiện thật nào được ghi nhận).
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <section
+        class="table-shell event-log-shell user-event-log"
+        id="event-table"
+    >
+
+        <div class="table-toolbar">
+
+            <div class="table-title">
+
+                <div class="table-title-icon">
+                    <i class="bi bi-list-check"></i>
+                </div>
+
+                <div>
+
+                    <div class="table-eyebrow">
+                        MONITORING
+                    </div>
+
+                    <h6>
+                        Event Logs
+                    </h6>
+
+                </div>
+
+            </div>
+
+
+            <div class="table-actions">
+
+                <div class="table-search-wrap">
+
+                    <i class="bi bi-search"></i>
+
+                    <input
+                        type="text"
+                        class="table-search"
+                        placeholder="Search events..."
+                        id="event-search"
+                    >
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary table-filter-btn"
+                >
+
+                    <i class="bi bi-funnel"></i>
+
+                    Filter
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-responsive">
+
+            <table
+                class="table table-custom align-middle mb-0"
+                id="event-table-data"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>Time</th>
+                        <th>Vehicle</th>
+                        <th>Fuel Before</th>
+                        <th>Fuel After</th>
+                        <th>Change</th>
+                        <th>Slope</th>
+                        <th>Confidence</th>
+                        <th>Prediction</th>
+                        <th>Duration</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="event-tbody"></tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            class="pagination-container"
+            id="pagination-container"
+        >
+
+            <button
+                type="button"
+                class="btn-page"
+                id="btn-prev"
+                onclick="changePage(-1)"
+            >
+
+                <i class="bi bi-chevron-left"></i>
+
+                Previous
+
+            </button>
+
+
+            <span
+                class="page-info"
+                id="page-info"
+            >
+                Page 1 / 1
+            </span>
+
+
+            <button
+                type="button"
+                class="btn-page"
+                id="btn-next"
+                onclick="changePage(1)"
+            >
+
+                Next
+
+                <i class="bi bi-chevron-right"></i>
+
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script
+    type="module"
+    src="{{ url_for('static', filename='js/dashboard.js') }}"
+></script>
+
+{% endblock %}

@@ -13,6 +13,27 @@ let fuelYAxisMax = FUEL_Y_FLOOR;
 let chartPoints = [];
 let lastChartTimestamp = null;
 
+// =====================================================================
+// HÀM KIỂM TRA CHẾ ĐỘ SÁNG/TỐI - GÁN VÀO WINDOW ĐỂ DÙNG CHUNG
+// =====================================================================
+window.isDarkMode = function() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' || 
+           document.body.classList.contains('dark-mode');
+};
+
+window.getChartBackgroundColor = function() {
+    return window.isDarkMode() ? '#111827' : '#FFFFFF';
+};
+
+window.getChartTextColor = function() {
+    return window.isDarkMode() ? '#E5E7EB' : '#111827';
+};
+
+window.getGridLineColor = function() {
+    return window.isDarkMode() ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.35)';
+};
+// =====================================================================
+
 function toDate(ts) {
     if (!ts) return null;
     return new Date(String(ts).replace(' ', 'T'));
@@ -53,66 +74,74 @@ const SAMPLE_EVENT = {
     ]
 };
 
-const lifecycleBaseOption = {
-    backgroundColor: '#FFFFFF',
-    title: { left: 'center', textStyle: { color: '#111827', fontSize: 14 } },
-    tooltip: {
-        trigger: 'axis',
-        backgroundColor: '#FFFFFF',
-        borderColor: '#E5E7EB',
-        textStyle: { color: '#111827' },
-        formatter: function (params) {
-            if (!params || params.length === 0) return '';
-            const item = params[0];
-            const timestamp = item.axisValueLabel;
-            const conf = item.data;
-            const formattedTime = formatFullTimestamp(timestamp);
-            const formattedConf = conf != null ? conf.toFixed(2) : '--';
-            return `
-                <div style="font-family: Inter, sans-serif; font-size: 13px; line-height: 1.6; min-width: 140px;">
-                    <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">${formattedTime}</div>
-                    <div>Confidence: <strong>${formattedConf}</strong></div>
-                </div>
-            `;
-        }
-    },
-    xAxis: {
-        type: 'category',
-        data: [],
-        axisLabel: {
-            color: '#4B5563',
-            interval: 0,
-            fontSize: 10,
-            fontWeight: 'bold',
-            margin: 8
+// Hàm tạo option cơ bản cho lifecycle chart - DÙNG MÀU ĐỘNG
+function getLifecycleBaseOption() {
+    const bgColor = window.getChartBackgroundColor();
+    const textColor = window.getChartTextColor();
+    const gridColor = window.getGridLineColor();
+    const isDark = window.isDarkMode();
+
+    return {
+        backgroundColor: bgColor,
+        title: { left: 'center', textStyle: { color: textColor, fontSize: 14 } },
+        tooltip: {
+            trigger: 'axis',
+            backgroundColor: bgColor,
+            borderColor: isDark ? '#333333' : '#E5E7EB',
+            textStyle: { color: textColor },
+            formatter: function (params) {
+                if (!params || params.length === 0) return '';
+                const item = params[0];
+                const timestamp = item.axisValueLabel;
+                const conf = item.data;
+                const formattedTime = formatFullTimestamp(timestamp);
+                const formattedConf = conf != null ? conf.toFixed(2) : '--';
+                return `
+                    <div style="font-family: Inter, sans-serif; font-size: 13px; line-height: 1.6; min-width: 140px;">
+                        <div style="font-weight: 600; color: ${textColor}; margin-bottom: 4px;">${formattedTime}</div>
+                        <div>Confidence: <strong>${formattedConf}</strong></div>
+                    </div>
+                `;
+            }
         },
-        axisLine: { lineStyle: { color: '#E5E7EB' } }
-    },
-    yAxis: {
-        type: 'value', min: 0, max: 1,
-        axisLabel: {
-            color: '#4B5563',
-            fontSize: 10,
-            fontWeight: 'bold',
-            formatter: '{value}'
+        xAxis: {
+            type: 'category',
+            data: [],
+            axisLabel: {
+                color: textColor,
+                interval: 0,
+                fontSize: 10,
+                fontWeight: 'bold',
+                margin: 8
+            },
+            axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } }
         },
-        axisLine: { lineStyle: { color: '#E5E7EB' } },
-        splitLine: { lineStyle: { color: 'rgba(148,163,184,0.35)', type: 'dashed' } }
-    },
-    series: [{
-        name: 'Confidence', type: 'line', data: [], smooth: true,
-        lineStyle: { color: '#D97706', width: 2 },
-        itemStyle: { color: '#D97706' },
-        markLine: {
-            silent: true, symbol: 'none',
-            data: [
-                { yAxis: 0.6, lineStyle: { color: '#F59E0B', type: 'dashed' }, label: { formatter: 'Candidate (0.6)', color: '#92400E' } },
-                { yAxis: 0.8, lineStyle: { color: '#DC2626', type: 'dashed' }, label: { formatter: 'Confirmed (0.8)', color: '#991B1B' } }
-            ]
+        yAxis: {
+            type: 'value', min: 0, max: 1,
+            axisLabel: {
+                color: textColor,
+                fontSize: 10,
+                fontWeight: 'bold',
+                formatter: '{value}'
+            },
+            axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } },
+            splitLine: { lineStyle: { color: gridColor, type: 'dashed' } }
         },
-        markArea: { data: [] }
-    }]
-};
+        series: [{
+            name: 'Confidence', type: 'line', data: [], smooth: true,
+            lineStyle: { color: '#D97706', width: 2 },
+            itemStyle: { color: '#D97706' },
+            markLine: {
+                silent: true, symbol: 'none',
+                data: [
+                    { yAxis: 0.6, lineStyle: { color: '#F59E0B', type: 'dashed' }, label: { formatter: 'Candidate (0.6)', color: isDark ? '#FCD34D' : '#92400E' } },
+                    { yAxis: 0.8, lineStyle: { color: '#DC2626', type: 'dashed' }, label: { formatter: 'Confirmed (0.8)', color: isDark ? '#FCA5A5' : '#991B1B' } }
+                ]
+            },
+            markArea: { data: [] }
+        }]
+    };
+}
 
 let lifecycleTimestamps = [];
 let lifecycleConfs = [];
@@ -161,7 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const lifecycleDom = document.getElementById('lifecycle-chart');
     lifecycleChart = echarts.init(lifecycleDom, null, { renderer: 'canvas' });
-    lifecycleChart.setOption(lifecycleBaseOption);
+
+    // Khởi tạo với màu động
+    lifecycleChart.setOption(getLifecycleBaseOption());
+    fuelChart.setOption({ backgroundColor: window.getChartBackgroundColor() });
 
     window.resizeCharts = function () {
         if (fuelChart && !fuelChart.isDisposed()) fuelChart.resize();
@@ -255,18 +287,21 @@ document.addEventListener('DOMContentLoaded', () => {
             prediction: p.label,
             point_status: p.point_status,
             confidence: p.confidence,
-            boundary_point: p.boundary_point || false  // <-- Thêm dòng này
+            boundary_point: p.boundary_point || false
         }));
 
         const yMax = updateFuelYAxisMax(yData);
         const option = buildChartOption(xData, yData, speedData, states, rawLike, pointStatuses, yMax, 0);
+        
+        // DÙNG MÀU ĐỘNG CHO TOOLTIP
         option.tooltip = {
             trigger: 'axis',
-            backgroundColor: '#FFFFFF',
-            borderColor: '#E5E7EB',
-            textStyle: { color: '#111827' },
+            backgroundColor: window.getChartBackgroundColor(),
+            borderColor: window.isDarkMode() ? '#333333' : '#E5E7EB',
+            textStyle: { color: window.getChartTextColor() },
             formatter: customTooltipFormatter(rawLike, rawLike)
         };
+        
         applyZoom(option, xData);
         fuelChart.setOption(option, true);
 
@@ -341,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         label: p.prediction || 'Driving',
                         point_status: p.point_status || 'normal',
                         confidence: p.confidence || 0,
-                        boundary_point: p.boundary_point || false  // <-- Thêm dòng này
+                        boundary_point: p.boundary_point || false
                     };
                     chartPoints.push(newPoint);
                     chartPointMap.set(key, newPoint);
@@ -399,8 +434,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 lifecycleConfs = sampled.map(h => h.confidence);
                 lifecycleLabels = sampled.map(h => h.label);
 
+                const isDark = window.isDarkMode();
+                const textColor = window.getChartTextColor();
+                const bgColor = window.getChartBackgroundColor();
+
                 const opt = {
                     title: { text: 'Event Lifecycle (dữ liệu mẫu)' },
+                    backgroundColor: bgColor,
                     xAxis: {
                         data: [...lifecycleTimestamps],
                         axisLabel: {
@@ -408,9 +448,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             fontSize: 10,
                             fontWeight: 'bold',
                             margin: 8,
-                            color: '#4B5563',
+                            color: textColor,
                             formatter: (value) => shortTime(value)
-                        }
+                        },
+                        axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } }
                     },
                     series: [{
                         data: [...lifecycleConfs],
@@ -434,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lifecycleTimestamps = [];
             lifecycleConfs = [];
             lifecycleLabels = [];
-            lifecycleChart.setOption(lifecycleBaseOption, true);
+            lifecycleChart.setOption(getLifecycleBaseOption(), true);
             document.getElementById('lifecycle-sample-note').style.display = 'none';
             document.getElementById('lifecycle-live-pill').innerHTML = '<i class="bi bi-lightning-charge"></i> Active tracking';
         }
@@ -444,8 +485,13 @@ document.addEventListener('DOMContentLoaded', () => {
         lifecycleConfs = sampledPoints.map(p => p.confidence);
         lifecycleLabels = sampledPoints.map(p => p.label);
 
+        const isDark = window.isDarkMode();
+        const textColor = window.getChartTextColor();
+        const bgColor = window.getChartBackgroundColor();
+
         const newOption = {
             title: { text: 'Event Lifecycle' },
+            backgroundColor: bgColor,
             xAxis: {
                 data: [...lifecycleTimestamps],
                 axisLabel: {
@@ -453,9 +499,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     fontSize: 10,
                     fontWeight: 'bold',
                     margin: 8,
-                    color: '#4B5563',
+                    color: textColor,
                     formatter: (value) => shortTime(value)
-                }
+                },
+                axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } }
             },
             series: [{ data: [...lifecycleConfs], markArea: { data: [] } }]
         };
@@ -660,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lifecycleConfs = [];
                 lifecycleLabels = [];
                 usingSampleLifecycle = false;
-                lifecycleChart.setOption(lifecycleBaseOption, true);
+                lifecycleChart.setOption(getLifecycleBaseOption(), true);
 
                 chartPoints = [];
                 lastChartTimestamp = null;
@@ -772,3 +819,73 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.resizeCharts) window.resizeCharts();
     }, 100);
 });
+
+// =====================================================================
+// HÀM CẬP NHẬT BIỂU ĐỒ KHI CHUYỂN CHẾ ĐỘ - GÁN VÀO WINDOW
+// =====================================================================
+window.updateChartTheme = function() {
+    const bgColor = window.getChartBackgroundColor();
+    const textColor = window.getChartTextColor();
+    const gridColor = window.getGridLineColor();
+    const isDark = window.isDarkMode();
+
+    // Cập nhật cho Fuel Chart
+    if (fuelChart && !fuelChart.isDisposed()) {
+        fuelChart.setOption({
+            backgroundColor: bgColor,
+            textStyle: { color: textColor },
+            tooltip: {
+                backgroundColor: bgColor,
+                borderColor: isDark ? '#333333' : '#E5E7EB',
+                textStyle: { color: textColor }
+            },
+            xAxis: [
+                {
+                    axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor }
+                },
+                {
+                    axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor }
+                }
+            ],
+            yAxis: [
+                {
+                    axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor },
+                    splitLine: { lineStyle: { color: gridColor } }
+                },
+                {
+                    axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } },
+                    axisLabel: { color: textColor },
+                    splitLine: { lineStyle: { color: gridColor } }
+                }
+            ]
+        }, false);
+    }
+
+    // Cập nhật cho Lifecycle Chart
+    if (lifecycleChart && !lifecycleChart.isDisposed()) {
+        lifecycleChart.setOption({
+            backgroundColor: bgColor,
+            textStyle: { color: textColor },
+            title: {
+                textStyle: { color: textColor }
+            },
+            tooltip: {
+                backgroundColor: bgColor,
+                borderColor: isDark ? '#333333' : '#E5E7EB',
+                textStyle: { color: textColor }
+            },
+            xAxis: {
+                axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } },
+                axisLabel: { color: textColor }
+            },
+            yAxis: {
+                axisLine: { lineStyle: { color: isDark ? '#4B5563' : '#E5E7EB' } },
+                axisLabel: { color: textColor },
+                splitLine: { lineStyle: { color: gridColor } }
+            }
+        }, false);
+    }
+};

@@ -1448,11 +1448,13 @@ def login():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    user = session["user"]
+    template = "dashboard.html" if user.get("role") == "admin" else "dashboard_user.html"
     return render_template(
-        "dashboard.html",
-        user=session["user"],
+        template,
+        user=user,
         cars=visible_cars(),
-        current_car=session["user"].get("car_id") or globals()["current_car"]
+        current_car=user.get("car_id") or globals()["current_car"]
     )
 
 @app.route("/register", methods=["GET", "POST"])
@@ -1503,17 +1505,18 @@ def register():
                 url_for("register")
             )
 
-        if len(password) < 6:
+        if len(password) < 8:
 
             flash(
-                "Mật khẩu phải có ít nhất 6 ký tự!",
+                "Mật khẩu phải có ít nhất 8 ký tự!",
                 "danger"
             )
 
             return redirect(
                 url_for("register")
-            )
+        )
 
+        
         if password != confirm_password:
 
             flash(
@@ -1921,10 +1924,10 @@ def reset_password():
         )
 
 
-        if len(password) < 6:
+        if len(password) < 8:
 
             flash(
-                "Mật khẩu phải có ít nhất 6 ký tự!",
+                "Mật khẩu phải có ít nhất 8 ký tự!",
                 "danger"
             )
 
@@ -2070,6 +2073,201 @@ def settings():
     cars = visible_cars()
     return render_template('settings.html', cars=cars, current_car=cars[0] if len(cars) == 1 else current_car)
 
+@app.route('/change-password')
+@login_required
+def change_password_page():
+
+    cars = visible_cars()
+
+    current_car = None
+
+    if cars:
+        current_car = cars[0]
+
+    return render_template(
+        'change_password.html',
+        cars=cars,
+        current_car=current_car
+    )
+
+
+@app.route('/api/change-password', methods=['POST'])
+@login_required
+def change_password():
+
+    try:
+
+        data = request.get_json(silent=True) or {}
+
+        current_password = str(
+            data.get('current_password', '')
+        ).strip()
+
+        new_password = str(
+            data.get('new_password', '')
+        )
+
+        confirm_password = str(
+            data.get('confirm_password', '')
+        )
+
+
+        if not current_password:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Vui lòng nhập mật khẩu hiện tại.'
+            }), 400
+
+
+        if not new_password:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Vui lòng nhập mật khẩu mới.'
+            }), 400
+
+
+        if not confirm_password:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Vui lòng xác nhận mật khẩu mới.'
+            }), 400
+
+
+
+        if len(new_password) < 8:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Mật khẩu phải có ít nhất 8 ký tự.'
+            }), 400
+
+
+        if new_password != confirm_password:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Mật khẩu xác nhận không khớp.'
+            }), 400
+
+
+        user = session.get('user', {})
+
+        email = user.get('email')
+
+
+        if not email:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Không xác định được tài khoản.'
+            }), 400
+
+
+
+        result = (
+            supabase
+            .table('accounts')
+            .select('password')
+            .eq('email', email)
+            .limit(1)
+            .execute()
+        )
+
+
+        if not result.data:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Không tìm thấy tài khoản.'
+            }), 404
+
+
+        password_hash = result.data[0].get('password')
+
+
+        if not password_hash:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Tài khoản chưa có mật khẩu hợp lệ.'
+            }), 400
+
+
+
+        if not check_password_hash(
+            password_hash,
+            current_password
+        ):
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Mật khẩu hiện tại không chính xác.'
+            }), 400
+
+
+
+        if check_password_hash(
+            password_hash,
+            new_password
+        ):
+
+            return jsonify({
+                'status': 'error',
+                'message': (
+                    'Mật khẩu mới không được trùng '
+                    'mật khẩu hiện tại.'
+                )
+            }), 400
+
+
+
+        new_password_hash = generate_password_hash(
+            new_password
+        )
+
+
+
+        update_result = (
+            supabase
+            .table('accounts')
+            .update({
+                'password': new_password_hash
+            })
+            .eq('email', email)
+            .execute()
+        )
+
+
+        if not update_result.data:
+
+            return jsonify({
+                'status': 'error',
+                'message': 'Không thể cập nhật mật khẩu.'
+            }), 500
+
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Đổi mật khẩu thành công.'
+        }), 200
+
+
+    except Exception as e:
+
+        print('=' * 60)
+        print('CHANGE PASSWORD ERROR:')
+        print(repr(e))
+        print('=' * 60)
+
+        return jsonify({
+            'status': 'error',
+            'message': 'Có lỗi xảy ra khi đổi mật khẩu.'
+        }), 500
+
+    
 @app.route('/api/set_vehicle', methods=['POST'])
 @login_required
 def set_vehicle():
