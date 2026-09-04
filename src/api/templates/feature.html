@@ -243,7 +243,7 @@
         async function fetchFeatureData(carId) {
             if (!carId) return; // Chặn lỗi undefined
             try {
-                const res = await fetch(`/api/history?car_id=${carId}`);
+                const res = await window.apiFetch(`/api/history?car_id=${carId}`);
                 const data = await res.json();
                 allFeatureData = data.reverse();
                 const totalPages = Math.ceil(allFeatureData.length / itemsPerFeaturePage) || 1;

@@ -5,9 +5,7 @@ export function customTooltipFormatter(points, rawData) {
         const item = rawData[dataIndex];
         if (!item) return '';
 
-        const isPredictedData = item.prediction !== undefined;
-
-        // Định dạng timestamp: HH:MM:SS - DD/MM/YYYY
+        // Định dạng timestamp
         let formattedTime = item.timestamp || '--';
         if (formattedTime !== '--') {
             try {
@@ -21,56 +19,39 @@ export function customTooltipFormatter(points, rawData) {
                     const yyyy = date.getFullYear();
                     formattedTime = `${hh}:${mm}:${ss} - ${dd}/${MM}/${yyyy}`;
                 }
-            } catch (e) {
-                // Giữ nguyên nếu lỗi parse
-            }
+            } catch (e) { /* giữ nguyên nếu lỗi parse */ }
         }
 
-        let html = `<div style="font-family: Inter, sans-serif; font-size: 13px; line-height: 1.6; min-width: 160px;">
+        let html = `<div style="font-family: Inter, sans-serif; font-size: 13px; line-height: 1.6; min-width: 190px;">
             <div style="font-weight: 600; color: #111827; margin-bottom: 4px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">${formattedTime}</div>`;
 
-        if (isPredictedData) {
-            // [FIX] Xóa emoji '🤔', '✅', '⛽', '🚀', '🧠', '📊', '🎯'
-            const statusLabel = item.point_status === 'thinking' ? 'Thinking' 
-                               : (item.point_status === 'confirmed' ? 'Confirmed' 
-                               : (item.point_status === 'normal' ? 'Normal' : '--'));
-            
-            const confidenceDisplay = item.confidence != null ? `${item.confidence.toFixed(2)}%` : 'N/A';
+        // ==== HIỂN THỊ RAW & FILTERED RÕ RÀNG ====
+        html += `
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <span>Nhiên liệu (RAW)</span>
+                <strong style="color: #2563EB;">${item.fuel_raw != null ? item.fuel_raw.toFixed(2) : '--'} L</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <span>Nhiên liệu (FILTERED)</span>
+                <strong style="color: #16A34A;">${item.fuel_filter != null ? item.fuel_filter.toFixed(2) : '--'} L</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <span>Speed</span>
+                <strong>${item.speed?.toFixed(2) ?? '--'} km/h</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <span>Prediction</span>
+                <strong>${item.prediction || item.label || '--'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <span>Status</span>
+                <strong>${item.point_status === 'thinking' ? 'Thinking' : item.point_status === 'confirmed' ? 'Confirmed' : item.point_status === 'normal' ? 'Normal' : '--'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 8px;">
+                <span>Confidence</span>
+                <strong>${item.confidence != null ? item.confidence.toFixed(2) + '%' : 'N/A'}</strong>
+            </div>`;
 
-            html += `<div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Fuel</span>
-                        <strong>${item.fuel?.toFixed(2)} L</strong>
-                     </div>
-                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Speed</span>
-                        <strong>${item.speed?.toFixed(2)} km/h</strong>
-                     </div>
-                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Prediction</span>
-                        <strong>${item.prediction || '--'}</strong>
-                     </div>
-                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Status</span>
-                        <strong>${statusLabel}</strong>
-                     </div>
-                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Confidence</span>
-                        <strong>${confidenceDisplay}</strong>
-                     </div>`;
-        } else {
-            html += `<div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Fuel</span>
-                        <strong>${item.fuel?.toFixed(2)} L</strong>
-                     </div>
-                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Speed</span>
-                        <strong>${item.speed?.toFixed(2)} km/h</strong>
-                     </div>
-                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span>Label</span>
-                        <strong>${item.label || 'Driving'}</strong>
-                     </div>`;
-        }
         html += `</div>`;
         return html;
     };

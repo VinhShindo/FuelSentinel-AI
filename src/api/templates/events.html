@@ -259,7 +259,7 @@
                 return;
             }
 
-            fetch('/api/download_report', {
+            window.apiFetch('/api/download_report', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -293,7 +293,7 @@
         async function fetchEventsData(carId) {
             if (!carId) return;
             try {
-                const res = await fetch(`/api/event_log?car_id=${carId}&limit=1000`);
+                const res = await window.apiFetch(`/api/event_log?car_id=${carId}&limit=1000`);
                 const data = await res.json();
                 if (data && data.events && Array.isArray(data.events)) {
                     allEvents = data.events.filter(ev => ev !== null && ev !== undefined);

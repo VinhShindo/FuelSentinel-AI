@@ -1,7 +1,7 @@
 import { buildChartOption } from './chartBuilder.js';
 import { customTooltipFormatter } from './tooltip.js';
 
-const API_BASE = window.location.origin;
+const API_BASE = window.__API_BASE__ || window.location.origin || 'http://127.0.0.1:5000';
 let fuelChart, lifecycleChart;
 let currentVehicle = window.currentVehicle || 'Car 2';
 
@@ -16,20 +16,20 @@ let lastChartTimestamp = null;
 // =====================================================================
 // HÀM KIỂM TRA CHẾ ĐỘ SÁNG/TỐI - GÁN VÀO WINDOW ĐỂ DÙNG CHUNG
 // =====================================================================
-window.isDarkMode = function() {
-    return document.documentElement.getAttribute('data-theme') === 'dark' || 
-           document.body.classList.contains('dark-mode');
+window.isDarkMode = function () {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark-mode');
 };
 
-window.getChartBackgroundColor = function() {
+window.getChartBackgroundColor = function () {
     return window.isDarkMode() ? '#111827' : '#FFFFFF';
 };
 
-window.getChartTextColor = function() {
+window.getChartTextColor = function () {
     return window.isDarkMode() ? '#E5E7EB' : '#111827';
 };
 
-window.getGridLineColor = function() {
+window.getGridLineColor = function () {
     return window.isDarkMode() ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.35)';
 };
 // =====================================================================
@@ -274,14 +274,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartPoints.length === 0) return;
 
         const xData = chartPoints.map(p => p.timestamp);
-        const yData = chartPoints.map(p => p.fuel);
+        const yRawData = chartPoints.map(p => p.fuel_raw);       // RAW
+        const yFilteredData = chartPoints.map(p => p.fuel_filter); // FILTERED (đã đổi)
         const speedData = chartPoints.map(p => p.speed);
         const states = chartPoints.map(p => p.label);
         const pointStatuses = chartPoints.map(p => p.point_status);
 
+        // Đưa cả raw + filter vào rawLike để tooltip dùng
         const rawLike = chartPoints.map(p => ({
             timestamp: p.timestamp,
-            fuel: p.fuel,
+            fuel_raw: p.fuel_raw ?? p.fuel ?? 0,
+            fuel_filter: p.fuel_filter ?? p.fuel ?? 0,
+            fuel: p.fuel ?? p.fuel_filter ?? 0,
             speed: p.speed,
             label: p.label,
             prediction: p.label,
@@ -290,10 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
             boundary_point: p.boundary_point || false
         }));
 
-        const yMax = updateFuelYAxisMax(yData);
-        const option = buildChartOption(xData, yData, speedData, states, rawLike, pointStatuses, yMax, 0);
-        
-        // DÙNG MÀU ĐỘNG CHO TOOLTIP
+        const yMax = updateFuelYAxisMax(yRawData);
+        const option = buildChartOption(xData, yRawData, yFilteredData, speedData, states, rawLike, pointStatuses, yMax, 0);
+
+        // Tooltip dùng rawLike đã có đủ fuel_raw + fuel_filter
         option.tooltip = {
             trigger: 'axis',
             backgroundColor: window.getChartBackgroundColor(),
@@ -301,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
             textStyle: { color: window.getChartTextColor() },
             formatter: customTooltipFormatter(rawLike, rawLike)
         };
-        
+
         applyZoom(option, xData);
         fuelChart.setOption(option, true);
 
@@ -318,8 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chartPoints = data.map(d => ({
                 timestamp: d.timestamp,
-                fuel: d.fuel,
-                speed: d.speed,
+                fuel: d.fuel ?? 0,                    // RAW (dữ liệu gốc)
+                fuel_raw: d.fuel ?? 0,                // RAW (alias, để tương thích)
+                fuel_filter: d.fuel_filter ?? d.fuel ?? 0,  // FILTERED
+                fuel_filtered: d.fuel_filter ?? d.fuel ?? 0, // alias giữ tương thích cũ
+                speed: d.speed ?? 0,
                 label: d.label || 'Driving',
                 point_status: 'normal'
             }));
@@ -363,16 +370,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         appended = true;
                     }
 
+                    // ← THÊM: cập nhật dữ liệu RAW/FILTERED nếu có
+                    if (p.fuel_raw != null) {
+                        existing.fuel_raw = p.fuel_raw;
+                    }
+                    if (p.fuel != null) {
+                        existing.fuel = p.fuel;
+                        existing.fuel_filtered = p.fuel;
+                    }
+                    if (p.speed != null) {
+                        existing.speed = p.speed;
+                    }
                     if (p.prediction && newStatus === 'confirmed') {
                         existing.label = p.prediction;
                     }
                     if (p.confidence) existing.confidence = p.confidence;
                 }
                 else {
+                    // Khi thêm điểm mới từ /api/points
                     const newPoint = {
                         timestamp: p.timestamp,
-                        fuel: p.fuel,
-                        speed: p.speed,
+                        fuel: p.fuel ?? 0,                          // FILTERED
+                        fuel_raw: p.fuel_raw ?? p.fuel ?? 0,        // RAW
+                        fuel_filter: p.fuel ?? 0,                   // FILTERED (đồng bộ)
+                        fuel_filtered: p.fuel ?? 0,                 // alias giữ tương thích
+                        speed: p.speed ?? 0,
                         label: p.prediction || 'Driving',
                         point_status: p.point_status || 'normal',
                         confidence: p.confidence || 0,
@@ -823,7 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================================
 // HÀM CẬP NHẬT BIỂU ĐỒ KHI CHUYỂN CHẾ ĐỘ - GÁN VÀO WINDOW
 // =====================================================================
-window.updateChartTheme = function() {
+window.updateChartTheme = function () {
     const bgColor = window.getChartBackgroundColor();
     const textColor = window.getChartTextColor();
     const gridColor = window.getGridLineColor();

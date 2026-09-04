@@ -466,11 +466,23 @@
 
     window.currentVehicle = '{{ current_car }}';
     window.userRole = '{{ user.role if user is defined else "viewer" }}';
+    window.API_BASE = window.__API_BASE__ || window.location.origin || 'http://127.0.0.1:5000';
+    window.apiFetch = function(path, options = {}) {
+        const url = path.startsWith('http') ? path : `${window.API_BASE}${path.startsWith('/') ? path : '/' + path}`;
+        return fetch(url, {
+            ...options,
+            credentials: 'same-origin',
+            headers: {
+                ...(options.headers || {}),
+                'Content-Type': options.body && !(options.headers && options.headers['Content-Type']) ? 'application/json' : (options.headers && options.headers['Content-Type']) || undefined
+            }
+        });
+    };
 
     window.changeVehicle = function (carId) {
         window.currentVehicle = carId;
 
-        fetch('/api/set_vehicle', {
+        window.apiFetch('/api/set_vehicle', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

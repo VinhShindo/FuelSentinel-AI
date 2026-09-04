@@ -129,7 +129,7 @@
         async function loadHistory(carId) {
             if (!carId) return; // Chặn lỗi undefined
             try {
-                const res = await fetch(`/api/history?car_id=${carId}`);
+                const res = await window.apiFetch(`/api/history?car_id=${carId}`);
                 const data = await res.json();
                 if (Array.isArray(data)) {
                     realtimeData = data.reverse().map(item => ({
@@ -147,7 +147,7 @@
         async function pollLatest(carId) {
             if (!carId) return; // Chặn lỗi undefined
             try {
-                const res = await fetch(`/api/realtime?car_id=${carId}`);
+                const res = await window.apiFetch(`/api/realtime?car_id=${carId}`);
                 const data = await res.json();
                 if (data && data.raw && data.raw.Timestamp) {
                     if (realtimeData.length === 0 || data.raw.Timestamp !== realtimeData[0].raw.Timestamp) {

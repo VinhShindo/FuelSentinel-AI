@@ -64,7 +64,7 @@
             };
 
             try {
-                const response = await fetch('/api/download_report', {
+                const response = await window.apiFetch('/api/download_report', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

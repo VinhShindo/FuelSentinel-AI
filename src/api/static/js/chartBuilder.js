@@ -1,6 +1,6 @@
 /**
  * Module: chartBuilder.js
- * Muc tieu: Xay dung cau hinh ECharts cho bieu do Fuel + Speed Timeline
+ * Muc tieu: Xay dung cau hinh ECharts cho bieu do Fuel (RAW + FILTERED) + Speed Timeline
  */
 import { findSegments, findEvents, findThinkingSegments } from './eventSegment.js';
 
@@ -9,8 +9,7 @@ export const STATE_COLORS = {
     'Driving': 'rgba(245, 158, 11, 0.26)',
     'Refuel': 'rgba(22, 163, 74, 0.40)',
     'Theft': 'rgba(220, 38, 38, 0.40)',
-    'Fuel Theft': 'rgba(220, 38, 38, 0.40)',
-    'Thinking': 'rgba(148, 163, 184, 0.28)'
+    'Fuel Theft': 'rgba(220, 38, 38, 0.40)'
 };
 
 const EVENT_SEMANTIC_STATES = new Set(['Refuel', 'Theft', 'Fuel Theft']);
@@ -30,10 +29,6 @@ function getChartColors() {
     };
 }
 
-// =====================================================================
-// [QUAN TRỌNG] Giữ lại các biến này để không bị lỗi "BORDER_LIGHT is not defined"
-// Giá trị được cập nhật động mỗi lần gọi
-// =====================================================================
 const TEXT_DARK = isDarkMode() ? '#F3F4F6' : '#111827';
 const TEXT_MUTED = isDarkMode() ? '#9CA3AF' : '#4B5563';
 const GRID_LINE = isDarkMode() ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.35)';
@@ -82,29 +77,16 @@ function mergeAdjacentSegments(segments) {
     return merged;
 }
 
-// =====================================================================
-// [FIX CUỐI CÙNG - QUAN TRỌNG] Hàm getShiftAmount
-// =====================================================================
-// Tính toán số điểm cần lùi về bên trái để đặt màu nền và icon.
-// - Mặc định lùi 1 điểm (để lấp đầy khoảng trắng 1 điểm).
-// - Nếu có boundary_point thực sự nằm ở startIdx - 2 (tức trước đó 2 điểm),
-//   thì thực hiện lùi 2 điểm. Điều này giúp icon nằm sát đúng gốc sự kiện vật lý.
-// =====================================================================
 function getShiftAmount(seg, i, boundaryPoints) {
     let shift = 1;
     if (i > 0 && (seg.state === 'Refuel' || seg.state === 'Theft')) {
-        // Điểm bắt đầu sự kiện theo logic Backend (boundary_point) nằm ở vị trí nào?
-        // Nếu segment bắt đầu ở vị trí index (11:31), thì boundary_point cách nó -2 index (11:21).
         let boundaryIdx = seg.startIdx - 2;
-
-        // Kiểm tra xem tại vị trí đó có được Backend đánh dấu là boundary_point không
         if (boundaryIdx >= 0 && boundaryPoints && boundaryPoints[boundaryIdx] === true) {
             shift = 2;
         }
     }
     return shift;
 }
-// =====================================================================
 
 function buildMarkArea(segments, totalLength, boundaryPoints) {
     const markAreas = [];
@@ -116,7 +98,6 @@ function buildMarkArea(segments, totalLength, boundaryPoints) {
 
         let endIdx = Math.min(Math.max(seg.startIdx, seg.endIdx), totalLength - 1);
         let shiftAmount = getShiftAmount(seg, i, boundaryPoints);
-        // Tính toán lại vị trí bắt đầu (startIdx) dựa trên shiftAmount vừa tìm được
         let startIdx = Math.max(0, seg.startIdx - shiftAmount);
 
         markAreas.push([
@@ -264,24 +245,15 @@ function buildBoundaryMarkers(segments, valueKeyStart, valueKeyEnd) {
     return boundaries;
 }
 
-// =====================================================================
-// [FIX CUỐI CÙNG - GHIM ICON ĐÚNG VỊ TRÍ] Hàm buildEventPins
-// =====================================================================
-// Sử dụng chung logic getShiftAmount với buildMarkArea để đảm bảo
-// màu nền và icon pin dịch chuyển đồng bộ chính xác về điểm boundary_point.
-// =====================================================================
 function buildEventPins(events, boundaryPoints) {
     return events.map(evt => {
         if (typeof evt.startIdx !== 'number' || typeof evt.endIdx !== 'number') return [];
         const color = evt.state === 'Refuel' ? '#16A34A' : '#DC2626';
         const charLabel = evt.state === 'Refuel' ? 'R' : 'T';
 
-        // Tính toán số điểm cần lùi icon pin, dựa hoàn toàn vào boundaryPoints
         let shift = 1;
         if (evt.state === 'Refuel' || evt.state === 'Theft') {
             let boundaryIdx = evt.startIdx - 2;
-            // Tại đây, backend trả về boundary_point = true tại điểm 11:21,
-            // nên shift sẽ trở thành 2
             if (boundaryIdx >= 0 && boundaryPoints && boundaryPoints[boundaryIdx] === true) {
                 shift = 2;
             }
@@ -289,11 +261,10 @@ function buildEventPins(events, boundaryPoints) {
 
         return [
             {
-                // Lùi đúng shift (1 hoặc 2) điểm về bên trái
                 coord: [Math.max(0, evt.startIdx - shift), evt.startValue],
                 symbol: 'pin',
                 symbolSize: 34,
-                symbolOffset: [0, '-50%'], // Căn chỉnh tâm đế pin chính xác vào toạ độ dữ liệu
+                symbolOffset: [0, '-50%'],
                 itemStyle: {
                     color: color,
                     borderColor: '#FFFFFF',
@@ -331,29 +302,25 @@ function buildEventPins(events, boundaryPoints) {
     }).flat();
 }
 
-export function buildChartOption(x_data, y_data, speed_data, states, rawData, pointStatuses, yAxisMax, yAxisMin) {
-    // =====================================================================
-    // [BỔ SUNG] Lấy boundaryPoints từ rawData do Backend gửi về
-    // =====================================================================
+export function buildChartOption(x_data, y_raw_data, y_filtered_data, speed_data, states, rawData, pointStatuses, yAxisMax, yAxisMin) {
     const boundaryPoints = rawData.map(item => item.boundary_point || false);
-    // =====================================================================
 
     const renderStates = computeRenderStates(states, pointStatuses);
 
-    const fuelSegments = mergeAdjacentSegments(findSegments(x_data, y_data, renderStates));
-    const events = findEvents(fuelSegments, x_data, y_data);
+    // Sử dụng y_raw_data cho các segment (màu nền, label, pin)
+    const fuelSegments = mergeAdjacentSegments(findSegments(x_data, y_raw_data, renderStates));
+    const events = findEvents(fuelSegments, x_data, y_raw_data);
 
-    const hasSpeed = Array.isArray(speed_data) && speed_data.length === y_data.length;
+    const hasSpeed = Array.isArray(speed_data) && speed_data.length === y_raw_data.length;
     const speedSegments = hasSpeed
         ? mergeAdjacentSegments(findSegments(x_data, speed_data, renderStates))
         : [];
 
     const thinkingSegments = findThinkingSegments(x_data, pointStatuses);
 
-    // Truyền boundaryPoints vào buildMarkArea
     const fuelMarkArea = [
-        ...buildMarkArea(fuelSegments, y_data.length, boundaryPoints),
-        ...buildThinkingOverlayAreas(thinkingSegments, y_data.length)
+        ...buildMarkArea(fuelSegments, y_raw_data.length, boundaryPoints),
+        ...buildThinkingOverlayAreas(thinkingSegments, y_raw_data.length)
     ];
     const speedMarkArea = hasSpeed
         ? [
@@ -365,7 +332,6 @@ export function buildChartOption(x_data, y_data, speed_data, states, rawData, po
     const segmentLabelData = buildSegmentLabels(fuelSegments);
     const fuelLabelData = buildValueLabels(fuelSegments, 'startValue', 'endValue', 'L');
     const boundaryMarkerData = buildBoundaryMarkers(fuelSegments, 'startValue', 'endValue');
-    // Truyền boundaryPoints vào buildEventPins
     const eventPinData = buildEventPins(events, boundaryPoints);
     const thinkingLabelData = buildThinkingOverlayLabels(thinkingSegments);
     const combinedFuelMarkPoints = [...segmentLabelData, ...fuelLabelData, ...boundaryMarkerData, ...eventPinData, ...thinkingLabelData];
@@ -386,7 +352,11 @@ export function buildChartOption(x_data, y_data, speed_data, states, rawData, po
         backgroundColor: colors.bgColor,
         textStyle: { color: colors.textDark },
         tooltip: { trigger: 'axis' },
-        legend: { show: false },
+        legend: { 
+            show: true, 
+            data: ['Nhiên liệu (RAW)', 'Nhiên liệu (FILTERED)', 'Tốc độ'],
+            textStyle: { color: colors.textDark }
+        },
         axisPointer: { link: [{ xAxisIndex: hasSpeed ? [0, 1] : [0] }] },
         dataZoom: hasSpeed ? [
             { type: 'slider', xAxisIndex: [0, 1], start: 0, end: 100, height: 10, bottom: 6, borderColor: BORDER_LIGHT },
@@ -443,26 +413,43 @@ export function buildChartOption(x_data, y_data, speed_data, states, rawData, po
             splitLine: { show: true, lineStyle: { color: GRID_LINE, type: 'dashed' } }
         }],
         animation: true,
-        series: [{
-            name: 'Mức nhiên liệu',
-            type: 'line',
-            data: y_data,
-            xAxisIndex: 0, yAxisIndex: 0,
-            smooth: true,
-            symbol: 'circle',
-            symbolSize: 6,
-            areaStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: 'rgba(37, 99, 235, 0.20)' },
-                    { offset: 1, color: 'rgba(37, 99, 235, 0.02)' }
-                ])
-            },
-            lineStyle: { color: '#2563EB', width: 3, shadowBlur: 8, shadowColor: 'rgba(37,99,235,0.18)' },
-            itemStyle: { color: '#2563EB' },
-            markArea: { silent: true, data: fuelMarkArea },
-            markPoint: { data: combinedFuelMarkPoints, symbol: (value, params) => params.symbol }
-        }]
+        series: []
     };
+
+    // Series RAW - xanh dương, nét liền
+    option.series.push({
+        name: 'Nhiên liệu (RAW)',
+        type: 'line',
+        data: y_raw_data,
+        xAxisIndex: 0, yAxisIndex: 0,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(37, 99, 235, 0.20)' },
+                { offset: 1, color: 'rgba(37, 99, 235, 0.02)' }
+            ])
+        },
+        lineStyle: { color: '#2563EB', width: 3, shadowBlur: 8, shadowColor: 'rgba(37,99,235,0.18)' },
+        itemStyle: { color: '#2563EB' },
+        markArea: { silent: true, data: fuelMarkArea },
+        markPoint: { data: combinedFuelMarkPoints, symbol: (value, params) => params.symbol }
+    });
+
+    // Series FILTERED - xanh lá, nét đứt
+    option.series.push({
+        name: 'Nhiên liệu (FILTERED)',
+        type: 'line',
+        data: y_filtered_data,
+        xAxisIndex: 0, yAxisIndex: 0,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 4,
+        lineStyle: { color: '#DC2626', width: 2, type: 'dashed' }, // ĐỔI MÀU ĐỎ
+        itemStyle: { color: '#DC2626' },                            // ĐỔI MÀU ĐỎ
+        markPoint: { data: [] }
+    });
 
     if (hasSpeed) {
         option.series.push({
